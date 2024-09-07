@@ -76,7 +76,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         } md:relative md:translate-x-0`}
       >
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold">BHP SYSTEM</h1>
+          <h1 className="text-2xl font-bold ml-5">BHP SYSTEM</h1>
           <button onClick={toggleSidebar} className="md:hidden">
             <X className="h-6 w-6" />
           </button>
