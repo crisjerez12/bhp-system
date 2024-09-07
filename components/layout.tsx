@@ -112,7 +112,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <button onClick={toggleSidebar} className="md:hidden mr-4">
                 <Menu className="h-6 w-6" />
               </button>
-              <h2 className="text-2xl font-semibold">{currentPage}</h2>
+              <h2 className="font-semibold sm:text-md md:text-lg lg:text-2xl">
+                {currentPage}
+              </h2>
             </div>
             <div className="flex items-center">
               <span className="mr-4">ADMIN</span>
