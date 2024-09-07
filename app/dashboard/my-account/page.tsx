@@ -97,7 +97,7 @@ export default function MyAccountPage() {
   };
 
   const handleUpdateUser = (id: number) => {
-    // Update user logic here
+    console.log(id);
   };
 
   const handleDeleteUser = (id: number) => {
