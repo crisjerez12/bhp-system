@@ -59,7 +59,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen ">
       {/* Overlay */}
       {isSidebarOpen && (
         <div
