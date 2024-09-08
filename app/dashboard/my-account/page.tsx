@@ -197,7 +197,7 @@ export default function MyAccountPage() {
           </div>
           <Button
             onClick={handleEdit}
-            className="bg-teal-600 hover:bg-teal-700"
+            className="bg-blue-600 hover:bg-blue-700"
           >
             {editing ? "Save" : "Edit Credentials"}
           </Button>
@@ -235,7 +235,7 @@ export default function MyAccountPage() {
           </div>
           <Button
             onClick={handleAddStaff}
-            className="bg-teal-600 hover:bg-teal-700"
+            className="bg-blue-600 hover:bg-blue-700"
           >
             Create
           </Button>
@@ -324,7 +324,7 @@ export default function MyAccountPage() {
                       </div>
                       <Button
                         onClick={() => handleUpdateUser(user.id)}
-                        className="bg-teal-600 hover:bg-teal-700"
+                        className="bg-blue-600 hover:bg-blue-700"
                       >
                         Update
                       </Button>

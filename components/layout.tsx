@@ -11,6 +11,7 @@ import {
   FileText,
   User,
   LogOut,
+  BoxIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -71,12 +72,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 bg-[#1e1e2d] text-white w-64 min-h-screen p-4 transform transition-transform duration-200 ease-in-out z-30 ${
+        className={`fixed inset-y-0 left-0 bg-slate-900 text-white w-64 min-h-screen p-4 transform transition-transform duration-200 ease-in-out z-30 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:relative md:translate-x-0`}
       >
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold ml-5">BHP SYSTEM</h1>
+        <div className="flex justify-between items-center mb-8 border-b-white border-b-2 pb-4">
+          <h1 className="text-2xl font-bold ml-3 flex items-center space-x-2">
+            <BoxIcon />
+            <span>BHP SYSTEM</span>
+          </h1>
           <button onClick={toggleSidebar} className="md:hidden">
             <X className="h-6 w-6" />
           </button>
@@ -88,10 +92,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.name}
                 href={item.path}
-                className={`flex items-center py-2 px-4 mb-2 rounded hover:bg-[#2d2d3f] transition-colors ${
-                  pathname === item.path
-                    ? "bg-[#f1416c] hover:bg-[#f1416c]"
-                    : ""
+                className={`flex items-center py-2 px-4 mb-2 rounded hover:bg-violet-600 transition-colors duration-150 ${
+                  pathname === item.path ? "bg-red-400 hover:bg-red-400" : ""
                 }`}
                 onClick={() => setIsSidebarOpen(false)}
               >
@@ -106,7 +108,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-[#6366f1] text-white shadow-md">
+        <header className="bg-[#5C55BF] text-white shadow-md">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center">
               <button onClick={toggleSidebar} className="md:hidden mr-4">

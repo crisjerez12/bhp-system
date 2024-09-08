@@ -43,11 +43,7 @@ export default function HouseholdForm() {
   const [householdType, setHouseholdType] = useState("");
   const [nhtsStatus, setNhtsStatus] = useState("");
   const [toilet, setToilet] = useState("");
-  const [familyPlanning, setFamilyPlanning] = useState("");
-  const [pregnantMembers, setPregnantMembers] = useState("");
-  // const [editingMember, setEditingMember] = useState<EditingMember | null>(
-  //   null
-  // );
+
   const [members, setMembers] = useState<Member[]>([
     {
       firstName: "John",
@@ -140,8 +136,6 @@ export default function HouseholdForm() {
     setHouseholdType("");
     setNhtsStatus("");
     setToilet("");
-    setFamilyPlanning("");
-    setPregnantMembers("");
     setMembers([]);
   };
 
@@ -470,31 +464,6 @@ export default function HouseholdForm() {
                   <SelectItem value="no">No</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <Label htmlFor="familyPlanning">Family Planning</Label>
-              <Select value={familyPlanning} onValueChange={setFamilyPlanning}>
-                <SelectTrigger id="familyPlanning">
-                  <SelectValue placeholder="Select family planning" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MACRA">MACRA</SelectItem>
-                  <SelectItem value="WRA">WRA</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="pregnantMembers">Pregnant Members</Label>
-              <Input
-                id="pregnantMembers"
-                type="number"
-                placeholder="Enter number of pregnant members"
-                value={pregnantMembers}
-                onChange={(e) => setPregnantMembers(e.target.value)}
-              />
             </div>
           </div>
 

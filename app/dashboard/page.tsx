@@ -21,10 +21,10 @@ const data = [
 ];
 
 const profileData = [
-  { title: "Total Profiles", value: 1360 },
-  { title: "Active Profiles", value: 1050 },
-  { title: "Inactive Profiles", value: 310 },
-  { title: "New Profiles", value: 180 },
+  { title: "Total Profiles", value: 1360, color: "bg-blue-500" },
+  { title: "Active Profiles", value: 1050, color: "bg-red-500" },
+  { title: "Inactive Profiles", value: 310, color: "bg-green-500" },
+  { title: "New Profiles", value: 180, color: "bg-violet-500" },
 ];
 
 export default function HealthDashboard() {
@@ -36,19 +36,21 @@ export default function HealthDashboard() {
         {profileData.map((item, index) => (
           <Card
             key={item.title}
-            className={`transition-transform duration-300 ease-in-out  ${
+            className={`transition-transform ${
+              item.color
+            } duration-300 ease-in-out  ${
               hoveredCard === index ? "transform -translate-y-1 skew-y-1" : ""
             }`}
             onMouseEnter={() => setHoveredCard(index)}
             onMouseLeave={() => setHoveredCard(null)}
           >
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">
+              <CardTitle className="text-sm font-medium text-white">
                 {item.title}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-teal-600">
+              <p className="text-2xl font-bold text-white">
                 {item.value.toLocaleString()}
               </p>
             </CardContent>
@@ -76,8 +78,8 @@ export default function HealthDashboard() {
                     x2="0"
                     y2="1"
                   >
-                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="month" />
@@ -86,7 +88,7 @@ export default function HealthDashboard() {
                 <Area
                   type="monotone"
                   dataKey="profiles"
-                  stroke="#0d9488"
+                  stroke="#3B82F6"
                   fillOpacity={1}
                   fill="url(#colorProfiles)"
                 />
