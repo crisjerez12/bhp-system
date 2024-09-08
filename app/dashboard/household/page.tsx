@@ -146,7 +146,7 @@ export default function HouseholdForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen ">
       <Card className="max-w-5xl mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-gray-800">
@@ -244,7 +244,7 @@ export default function HouseholdForm() {
               <DialogTrigger asChild>
                 <Button className="mt-4">Add Member</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-white">
                 <DialogHeader>
                   <DialogTitle>Add New Member</DialogTitle>
                 </DialogHeader>
@@ -342,7 +342,7 @@ export default function HouseholdForm() {
           </div>
 
           <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-            <DialogContent>
+            <DialogContent className="bg-white">
               <DialogHeader>
                 <DialogTitle>Edit Member</DialogTitle>
               </DialogHeader>
