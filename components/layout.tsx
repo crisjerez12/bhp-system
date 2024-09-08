@@ -11,7 +11,6 @@ import {
   FileText,
   User,
   LogOut,
-  BoxIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -77,12 +76,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         } md:relative md:translate-x-0`}
       >
         <div className="flex justify-between items-center mb-8 border-b-white border-b-2 pb-4">
-          <h1 className="text-2xl font-bold ml-3 flex items-center space-x-2">
-            <BoxIcon />
-            <span>BHP SYSTEM</span>
-          </h1>
+          <h1 className="text-2xl font-bold  ">BHP SYSTEM</h1>
           <button onClick={toggleSidebar} className="md:hidden">
-            <X className="h-6 w-6" />
+            <X className="h-7 w-7 border-white border-2" />
           </button>
         </div>
         <nav>
@@ -92,8 +88,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.name}
                 href={item.path}
-                className={`flex items-center py-2 px-4 mb-2 rounded hover:bg-violet-600 transition-colors duration-150 ${
-                  pathname === item.path ? "bg-red-400 hover:bg-red-400" : ""
+                className={`flex items-center py-2 px-4 mb-2 rounded  transition-colors duration-150 ${
+                  pathname === item.path
+                    ? "bg-red-400 hover:bg-red-400"
+                    : "hover:bg-violet-600"
                 }`}
                 onClick={() => setIsSidebarOpen(false)}
               >
