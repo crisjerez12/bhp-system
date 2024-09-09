@@ -118,10 +118,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex items-center">
               <span className="mr-4">ADMIN</span>
-              <button className="bg-[#1e1e2d] text-white px-3 py-1 rounded flex items-center">
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </button>
+              <Link href="/">
+                <button className="bg-[#1e1e2d] text-white px-3 py-1 rounded flex items-center">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </button>
+              </Link>
             </div>
           </div>
         </header>

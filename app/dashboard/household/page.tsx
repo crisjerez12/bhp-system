@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card, CardContent } from "@/components/ui/card";
 
 export default function HouseholdForm() {
   const [householdName, setHouseholdName] = useState("");
@@ -130,7 +129,6 @@ export default function HouseholdForm() {
     }
   };
 
-
   const handleReset = () => {
     setHouseholdName("");
     setHouseholdType("");
@@ -142,9 +140,9 @@ export default function HouseholdForm() {
   };
 
   return (
-    <div className="min-h-screen ">
-      <Card className="max-w-5xl mx-auto bg-white shadow-lg">
-        <CardContent className="p-6">
+    <div>
+      <div>
+        <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <Label
@@ -250,7 +248,7 @@ export default function HouseholdForm() {
                   Add Member
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="bg-white">
                 <DialogHeader>
                   <DialogTitle>Add New Member</DialogTitle>
                 </DialogHeader>
@@ -567,8 +565,8 @@ export default function HouseholdForm() {
               Submit
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

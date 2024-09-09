@@ -113,9 +113,11 @@ export default function LoginPage() {
                 </Link>
               </Label>
             </div>
-            <Button disabled={isSubmitting} type="submit" className="w-full">
-              Sign In
-            </Button>
+            <Link href="/dashboard">
+              <Button disabled={isSubmitting} type="submit" className="w-full">
+                Sign In
+              </Button>
+            </Link>
           </form>
         </div>
       </div>
