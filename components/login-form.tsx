@@ -22,7 +22,7 @@ export function LoginForm() {
   const router = useRouter();
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const loginUser = 
+    // const loginUser =
     router.push("/dashboard");
   };
 
