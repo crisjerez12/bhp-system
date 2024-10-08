@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,42 +14,85 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createSeniorCitizen } from "@/app/actions/senior-response";
+
+const staffMembers = [
+  "Maria Santos",
+  "Juana Dela Cruz",
+  "Rosario Fernandez",
+  "Lourdes Garcia",
+  "Carmela Reyes",
+];
+
+const puroks = Array.from({ length: 10 }, (_, i) => `Purok ${i + 1}`);
+
+const months = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: currentYear - 1899 }, (_, i) =>
+  (currentYear - i).toString()
+);
+
+const formSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  month: z.string().min(1, "Month is required"),
+  day: z.string().min(1, "Day is required"),
+  year: z.string().min(1, "Year is required"),
+  age: z.number().min(0),
+  weight: z.string().min(1, "Weight is required"),
+  bloodPressureSystolic: z.string().min(1, "Systolic pressure is required"),
+  bloodPressureDiastolic: z.string().min(1, "Diastolic pressure is required"),
+  assignedStaff: z.string().min(1, "Assigned staff is required"),
+  address: z.string().min(1, "Address is required"),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 export default function SeniorCitizenForm() {
-  const [day, setDay] = useState<string>("");
-  const [month, setMonth] = useState<string>("");
-  const [year, setYear] = useState<string>("");
   const [age, setAge] = useState<number>(0);
+  const [submitStatus, setSubmitStatus] = useState<string | null>(null);
 
-  const staffMembers = [
-    "Maria Santos",
-    "Juana Dela Cruz",
-    "Rosario Fernandez",
-    "Lourdes Garcia",
-    "Carmela Reyes",
-  ];
+  const {
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      month: "",
+      day: "",
+      year: "",
+      age: 0,
+      weight: "",
+      bloodPressureSystolic: "",
+      bloodPressureDiastolic: "",
+      assignedStaff: "",
+      address: "",
+    },
+  });
 
-  const puroks = Array.from({ length: 10 }, (_, i) => `Purok ${i + 1}`);
-
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 1899 }, (_, i) =>
-    (currentYear - i).toString()
-  );
+  const month = watch("month");
+  const day = watch("day");
+  const year = watch("year");
 
   const getDaysInMonth = (month: string, year: string) => {
     const monthIndex = months.indexOf(month);
@@ -64,160 +110,333 @@ export default function SeniorCitizenForm() {
         calculatedAge--;
       }
       setAge(calculatedAge);
+      setValue("age", calculatedAge);
     } else {
       setAge(0);
+      setValue("age", 0);
     }
-  }, [day, month, year]);
+  }, [day, month, year, setValue]);
 
-  const handleReset = () => {
-    setDay("");
-    setMonth("");
-    setYear("");
-    setAge(0);
-    // Reset other form fields here
+  const onSubmit = async (data: FormData) => {
+    console.log("Form data:", data); // Log the form data
+
+    const seniorCitizenData = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      birthDate: {
+        month: data.month,
+        day: data.day,
+        year: data.year,
+      },
+      age: data.age,
+      weight: data.weight,
+      bloodPressure: {
+        systolic: data.bloodPressureSystolic,
+        diastolic: data.bloodPressureDiastolic,
+      },
+      assignedStaff: data.assignedStaff,
+      address: data.address,
+    };
+
+    console.log("Formatted data:", seniorCitizenData); // Log the formatted data
+
+    try {
+      const result = await createSeniorCitizen(seniorCitizenData);
+      console.log("Server response:", result); // Log the server response
+      setSubmitStatus(result.message);
+      if (result.success) {
+        reset();
+        setAge(0);
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setSubmitStatus("An error occurred. Please try again.");
+    }
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    // Submit form logic here
+  const handleReset = () => {
+    reset();
+    setAge(0);
   };
 
   return (
-    <form onSubmit={handleSubmit} className=" mx-auto p-6 ">
+    <form onSubmit={handleSubmit(onSubmit)} className="mx-auto p-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label htmlFor="firstName" className="text-gray-700">
             First name
           </Label>
-          <Input
-            id="firstName"
-            placeholder="Enter first name"
-            className="mt-1"
+          <Controller
+            name="firstName"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                id="firstName"
+                placeholder="Enter first name"
+                className="mt-1"
+              />
+            )}
           />
+          {errors.firstName && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.firstName.message}
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="lastName" className="text-gray-700">
             Last name
           </Label>
-          <Input id="lastName" placeholder="Enter last name" className="mt-1" />
+          <Controller
+            name="lastName"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                id="lastName"
+                placeholder="Enter last name"
+                className="mt-1"
+              />
+            )}
+          />
+          {errors.lastName && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.lastName.message}
+            </p>
+          )}
         </div>
         <div>
           <Label className="text-gray-700">Birthday</Label>
           <div className="grid grid-cols-3 gap-2 mt-1">
-            <Select value={month} onValueChange={setMonth}>
-              <SelectTrigger>
-                <SelectValue placeholder="Month" />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={day} onValueChange={setDay}>
-              <SelectTrigger>
-                <SelectValue placeholder="Day" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: getDaysInMonth(month, year) }, (_, i) => (
-                  <SelectItem key={i + 1} value={(i + 1).toString()}>
-                    {i + 1}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger>
-                <SelectValue placeholder="Year" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y} value={y}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="month"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <Controller
+              name="day"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from(
+                      { length: getDaysInMonth(month, year) },
+                      (_, i) => (
+                        <SelectItem key={i + 1} value={(i + 1).toString()}>
+                          {i + 1}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <Controller
+              name="year"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((y) => (
+                      <SelectItem key={y} value={y}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
         </div>
         <div>
           <Label htmlFor="age" className="text-gray-700">
             Age
           </Label>
-          <Input id="age" value={age} disabled className="mt-1 bg-gray-200" />
+          <Controller
+            name="age"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                id="age"
+                value={age}
+                disabled
+                className="mt-1 bg-gray-200"
+              />
+            )}
+          />
         </div>
         <div>
           <Label htmlFor="weight" className="text-gray-700">
             Weight (kg)
           </Label>
-          <Input
-            id="weight"
-            type="number"
-            placeholder="Enter weight"
-            className="mt-1"
+          <Controller
+            name="weight"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                id="weight"
+                type="number"
+                placeholder="Enter weight"
+                className="mt-1"
+              />
+            )}
           />
+          {errors.weight && (
+            <p className="text-red-500 text-sm mt-1">{errors.weight.message}</p>
+          )}
         </div>
         <div>
           <Label htmlFor="bloodPressure" className="text-gray-700">
             Blood Pressure
           </Label>
-          <Input id="bloodPressure" placeholder="Enter BP" className="mt-1" />
+          <div className="flex items-center space-x-2 mt-1">
+            <Controller
+              name="bloodPressureSystolic"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  id="bloodPressureSystolic"
+                  type="number"
+                  placeholder="Systolic"
+                  className="w-1/2"
+                />
+              )}
+            />
+            <span>/</span>
+            <Controller
+              name="bloodPressureDiastolic"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  id="bloodPressureDiastolic"
+                  type="number"
+                  placeholder="Diastolic"
+                  className="w-1/2"
+                />
+              )}
+            />
+          </div>
+          {errors.bloodPressureSystolic && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.bloodPressureSystolic.message}
+            </p>
+          )}
+          {errors.bloodPressureDiastolic && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.bloodPressureDiastolic.message}
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="assignedStaff" className="text-gray-700">
             Assigned Staff
           </Label>
-          <Select>
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Select Staff" />
-            </SelectTrigger>
-            <SelectContent>
-              {staffMembers.map((staff, index) => (
-                <SelectItem
-                  key={index}
-                  value={staff.toLowerCase().replace(" ", "-")}
-                >
-                  {staff}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            name="assignedStaff"
+            control={control}
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select Staff" />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffMembers.map((staff, index) => (
+                    <SelectItem
+                      key={index}
+                      value={staff.toLowerCase().replace(" ", "-")}
+                    >
+                      {staff}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.assignedStaff && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.assignedStaff.message}
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="address" className="text-gray-700">
             Address
           </Label>
-          <Select>
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Select Purok" />
-            </SelectTrigger>
-            <SelectContent>
-              {puroks.map((purok, index) => (
-                <SelectItem
-                  key={index}
-                  value={purok.toLowerCase().replace(" ", "-")}
-                >
-                  {purok}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            name="address"
+            control={control}
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select Purok" />
+                </SelectTrigger>
+                <SelectContent>
+                  {puroks.map((purok, index) => (
+                    <SelectItem
+                      key={index}
+                      value={purok.toLowerCase().replace(" ", "-")}
+                    >
+                      {purok}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.address && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.address.message}
+            </p>
+          )}
         </div>
       </div>
+      {submitStatus && (
+        <div
+          className={`mt-4 p-2 ${
+            submitStatus.includes("successfully")
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
+          {submitStatus}
+        </div>
+      )}
       <div className="mt-6 flex justify-between">
         <Button
           type="button"
           onClick={handleReset}
           variant="outline"
-          className="bg-white  border-blue-600 text-blue-600 hover:bg-gray-100"
+          className="bg-white border-blue-600 text-blue-600 hover:bg-gray-100"
         >
           Reset
         </Button>
         <Button
           type="submit"
-          className=" bg-blue-700 hover:bg-blue-800 text-white "
+          className="bg-blue-700 hover:bg-blue-800 text-white"
         >
           Submit
         </Button>
