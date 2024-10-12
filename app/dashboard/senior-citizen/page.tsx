@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { X } from "lucide-react";
 import { createSeniorCitizen } from "@/app/actions/senior-response";
 
 const staffMembers = [
@@ -58,6 +59,7 @@ const formSchema = z.object({
   bloodPressureDiastolic: z.string().min(1, "Diastolic pressure is required"),
   assignedStaff: z.string().min(1, "Assigned staff is required"),
   address: z.string().min(1, "Address is required"),
+  medicines: z.array(z.string()).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -65,6 +67,8 @@ type FormData = z.infer<typeof formSchema>;
 export default function SeniorCitizenForm() {
   const [age, setAge] = useState<number>(0);
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const [medicines, setMedicines] = useState<string[]>([]);
+  const [medicineName, setMedicineName] = useState<string>("");
 
   const {
     control,
@@ -87,6 +91,7 @@ export default function SeniorCitizenForm() {
       bloodPressureDiastolic: "",
       assignedStaff: "",
       address: "",
+      medicines: [],
     },
   });
 
@@ -118,8 +123,6 @@ export default function SeniorCitizenForm() {
   }, [day, month, year, setValue]);
 
   const onSubmit = async (data: FormData) => {
-    console.log("Form data:", data); // Log the form data
-
     const seniorCitizenData = {
       firstName: data.firstName,
       lastName: data.lastName,
@@ -136,17 +139,16 @@ export default function SeniorCitizenForm() {
       },
       assignedStaff: data.assignedStaff,
       address: data.address,
+      medicines: medicines,
     };
-
-    console.log("Formatted data:", seniorCitizenData); // Log the formatted data
 
     try {
       const result = await createSeniorCitizen(seniorCitizenData);
-      console.log("Server response:", result); // Log the server response
       setSubmitStatus(result.message);
       if (result.success) {
         reset();
         setAge(0);
+        setMedicines([]);
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -157,6 +159,21 @@ export default function SeniorCitizenForm() {
   const handleReset = () => {
     reset();
     setAge(0);
+    setMedicines([]);
+  };
+
+  const handleAddMedicine = () => {
+    if (
+      medicineName.trim() !== "" &&
+      !medicines.includes(medicineName.trim())
+    ) {
+      setMedicines([...medicines, medicineName.trim()]);
+      setMedicineName("");
+    }
+  };
+
+  const handleRemoveMedicine = (medicine: string) => {
+    setMedicines(medicines.filter((m) => m !== medicine));
   };
 
   return (
@@ -412,6 +429,44 @@ export default function SeniorCitizenForm() {
               {errors.address.message}
             </p>
           )}
+        </div>
+      </div>
+      <div className="mt-6">
+        <Label htmlFor="medicine" className="text-gray-700">
+          Medicines
+        </Label>
+        <div className="flex mt-2">
+          <Input
+            id="medicine"
+            value={medicineName}
+            onChange={(e) => setMedicineName(e.target.value)}
+            placeholder="Enter medicine name"
+            className="flex-grow"
+          />
+          <Button
+            type="button"
+            onClick={handleAddMedicine}
+            className="ml-2 bg-blue-700 hover:bg-blue-800 text-white"
+          >
+            Add
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-4">
+          {medicines.map((medicine, index) => (
+            <div
+              key={index}
+              className="bg-gray-200 text-gray-800 text-sm py-1 px-2 rounded-full flex items-center"
+            >
+              {medicine}
+              <button
+                type="button"
+                onClick={() => handleRemoveMedicine(medicine)}
+                className="ml-2 text-gray-500 hover:text-gray-700"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
       {submitStatus && (
