@@ -1,15 +1,25 @@
-import mongoose from "mongoose";
+import mongoose, { Connection } from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/bhp";
+let cachedConnection: Connection | null = null;
 
-async function connectToDatabase() {
+export default async function connectToMongoDB() {
+  if (!process.env.MONGODB_URI) {
+    console.log("MONGODB_URI environment variable is not set");
+    return; // Early return if URI is not set
+  }
+
+  if (cachedConnection) {
+    console.log("Using cached db connection");
+    return cachedConnection;
+  }
+
   try {
-    await mongoose.connect(MONGODB_URI);
-    console.log("Connected to MongoDB successfully");
+    const mongooseConnection = await mongoose.connect(process.env.MONGODB_URI!);
+    cachedConnection = mongooseConnection.connection;
+    console.log("New MongoDB connection established");
+    return cachedConnection;
   } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
-    process.exit(1);
+    console.error("Failed to connect to MongoDB", error);
+    throw error; // Rethrow the error for further handling
   }
 }
-
-export default connectToDatabase;

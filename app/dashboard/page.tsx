@@ -22,8 +22,6 @@ const data = [
 
 const profileData = [
   { title: "Total Profiles", value: 1360, color: "bg-blue-500" },
-  { title: "Active Profiles", value: 1050, color: "bg-red-500" },
-  { title: "Inactive Profiles", value: 310, color: "bg-green-500" },
   { title: "New Profiles", value: 180, color: "bg-violet-500" },
 ];
 
@@ -32,7 +30,7 @@ export default function HealthDashboard() {
 
   return (
     <div className="p-4 sm:p-6 md:p-8  min-h-screen">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2  gap-4 mb-8">
         {profileData.map((item, index) => (
           <Card
             key={item.title}

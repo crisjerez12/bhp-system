@@ -1,6 +1,6 @@
 "use server";
 
-import connectToDatabase from "@/lib/connection";
+import connectToMongoDB from "@/lib/connection";
 import User from "@/lib/models/user";
 import { z } from "zod";
 
@@ -17,9 +17,9 @@ export async function loginAction(formData: z.infer<typeof loginSchema>) {
   }
 
   const { username, password } = result.data;
-
+  console.log(username, password);
   try {
-    await connectToDatabase();
+    await connectToMongoDB();
 
     const user = await User.findOne({ username });
     if (!user) {

@@ -11,6 +11,7 @@ import {
   FileText,
   User,
   LogOut,
+  BadgePlus,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,6 +28,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       name: "Family Planning",
       icon: Heart,
       path: "/dashboard/family-planning",
+    },
+    {
+      name: "Pregnant",
+      icon: BadgePlus,
+      path: "/dashboard/pregnant",
     },
     {
       name: "Senior Citizen",

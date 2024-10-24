@@ -1,28 +1,26 @@
 "use server";
 
-import {
-  SeniorCitizenSchema,
-  SeniorCitizen,
-  SeniorCitizenModel,
-} from "@/lib/models/senior-citizen";
 import connectToDatabase from "@/lib/connection";
+import SeniorCitizen from "@/lib/models/senior-citizen";
 
-export async function createSeniorCitizen(data: SeniorCitizen) {
-  console.log("Received data in server action:", data); // Log the received data
+export async function createSeniorCitizen(formData: FormData) {
   try {
-    // Connect to the database
     await connectToDatabase();
+    const seniorResponse = {
+      firstName: formData.get("firstName"),
+      lastName: formData.get("lastName"),
+      birthDate: formData.get("birthDate"),
+      age: formData.get("age"),
+      weight: formData.get("weight"),
+      systolic: formData.get("systolic"),
+      diastolic: formData.get("diastolic"),
+      assignedStaff: formData.get("assignedStaff"),
+      address: formData.get("address"),
+      medicines: formData.getAll("medicines[]"),
+    };
+    const seniorCitizen = new SeniorCitizen(seniorResponse);
 
-    // Validate the data using the schema
-    const validatedData = SeniorCitizenSchema.parse(data);
-
-    // Create a new SeniorCitizenModel instance
-    const seniorCitizen = new SeniorCitizenModel(validatedData);
-
-    // Save the data to the database
     await seniorCitizen.save();
-
-    console.log("Senior Citizen saved:", validatedData);
 
     return { success: true, message: "Senior Citizen created successfully!" };
   } catch (error) {
