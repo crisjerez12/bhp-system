@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/dialog";
 import { loginAction } from "@/app/actions/auth";
 
-// Define the schema for form validation
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -46,7 +45,6 @@ export function LoginForm() {
     try {
       const result = await loginAction(data);
       if (result && result.success) {
-        // Handle successful login (e.g., redirect to dashboard)
         window.location.href = "/dashboard";
       } else {
         setServerError(result?.error || "An error occurred during login.");

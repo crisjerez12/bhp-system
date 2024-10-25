@@ -224,7 +224,7 @@ export default function MothersForm() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end space-x-4 mt-6">
+          <div className="flex items-center justify-between space-x-4 mt-6">
             <button
               type="reset"
               className="py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

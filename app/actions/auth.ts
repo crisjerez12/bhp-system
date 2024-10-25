@@ -1,9 +1,9 @@
 "use server";
 
 import connectToMongoDB from "@/lib/connection";
-import User from "@/lib/models/user";
+import UserModel from "@/lib/models/user";
 import { z } from "zod";
-
+import bcryptjs from "bcryptjs";
 const loginSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(6),
@@ -21,12 +21,14 @@ export async function loginAction(formData: z.infer<typeof loginSchema>) {
   try {
     await connectToMongoDB();
 
-    const user = await User.findOne({ username });
+    const user = await UserModel.findOne({ username });
     if (!user) {
       return { success: false, error: "Invalid username or password" };
     }
 
-    if (user.password !== password) {
+    // Replace the direct comparison with bcryptjs
+    const isPasswordValid = await bcryptjs.compare(password, user.password);
+    if (!isPasswordValid) {
       return { success: false, error: "Invalid username or password" };
     }
 

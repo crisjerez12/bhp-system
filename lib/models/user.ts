@@ -1,31 +1,52 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-// Interface to define the structure of a User document
 export interface IUser extends Document {
+  firstName: string;
+  lastName: string;
   username: string;
   password: string;
-  // Removed: comparePassword method
+  email: string;
+  role?: "admin" | "staff";
 }
 
-// Define the schema for the User model
-const UserSchema: Schema = new Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
+const UserSchema: Schema = new Schema(
+  {
+    firstName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    role: {
+      type: String,
+    },
   },
-  password: {
-    type: String,
-    required: true,
-    // Removed: minlength constraint
-  },
-});
+  {
+    timestamps: true,
+  }
+);
 
-// Removed: Pre-save hook for password hashing
+const UserModel =
+  mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 
-// Removed: comparePassword method
-
-// Create and export the User model
-export default mongoose.models.User ||
-  mongoose.model<IUser>("User", UserSchema);
+export default UserModel;
