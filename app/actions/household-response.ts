@@ -1,12 +1,12 @@
 "use server";
 
 import connectToMongoDB from "@/lib/connection";
-import Household, { HouseholdType } from "@/lib/models/households";
+import HouseholdModel, { HouseholdType } from "@/lib/models/households";
 
 export async function createHousehold(data: HouseholdType) {
   try {
     await connectToMongoDB();
-    const household = new Household(data);
+    const household = new HouseholdModel(data);
     const res = await household.save();
     if (res) {
       return {

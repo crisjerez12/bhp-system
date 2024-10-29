@@ -42,7 +42,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "Reports", icon: FileText, path: "/dashboard/reports" },
     { name: "My Account", icon: User, path: "/dashboard/my-account" },
   ];
-
   const currentPage =
     menuItems.find((item) => item.path === pathname)?.name || "Dashboard";
 

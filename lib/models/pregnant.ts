@@ -37,5 +37,7 @@ export const PregnantSchema: Schema = new Schema(
   }
 );
 
-export default mongoose.models.Pregnant ||
+const PregnantModel =
+  mongoose.models.Pregnant ||
   mongoose.model<IPregnant>("Pregnant", PregnantSchema);
+export default PregnantModel;

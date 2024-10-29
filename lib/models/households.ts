@@ -35,5 +35,6 @@ const HouseholdSchema: Schema = new Schema({
   address: { type: String, required: true },
   members: { type: [MemberSchema], required: true },
 });
-export default mongoose.models.Household ||
-  mongoose.model("Household", HouseholdSchema);
+const HouseholdModel =
+  mongoose.models.Household || mongoose.model("Household", HouseholdSchema);
+export default HouseholdModel;
