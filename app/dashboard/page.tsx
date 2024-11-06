@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Area,
@@ -11,32 +11,107 @@ import {
   YAxis,
 } from "recharts";
 
-const data = [
-  { month: "January", profiles: 120 },
-  { month: "February", profiles: 180 },
-  { month: "March", profiles: 220 },
-  { month: "April", profiles: 250 },
-  { month: "May", profiles: 280 },
-  { month: "June", profiles: 310 },
-];
-
-const profileData = [
-  { title: "Total Profiles", value: 1360, color: "bg-blue-500" },
-  { title: "New Profiles", value: 180, color: "bg-violet-500" },
-];
+interface AnalyticsData {
+  success: boolean;
+  message: string;
+  totalProfiles: number;
+  data: {
+    households: number;
+    pregnants: number;
+    seniorCitizens: number;
+    familyPlannings: number;
+    monthlyResponse: {
+      [key: string]: number;
+    };
+  };
+}
 
 export default function HealthDashboard() {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
+    null
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/analytics");
+        if (!response.ok) {
+          throw new Error("Failed to fetch the Data");
+        }
+        const data: AnalyticsData = await response.json();
+        if (!data.success) {
+          throw new Error(data.message);
+        }
+        setAnalyticsData(data);
+      } catch (err) {
+        setError("An error occurred while fetching data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return <div className="text-4xl">Loading...</div>;
+  }
+
+  if (error || !analyticsData) {
+    return (
+      <div className="p-4 text-center text-red-500">
+        {error || "No data available"}
+      </div>
+    );
+  }
+
+  const profileData = [
+    {
+      title: "Total Profiles",
+      value: analyticsData.totalProfiles,
+      color: "bg-blue-500",
+    },
+    {
+      title: "Households",
+      value: analyticsData.data.households,
+      color: "bg-green-500",
+    },
+    {
+      title: "Pregnants",
+      value: analyticsData.data.pregnants,
+      color: "bg-yellow-500",
+    },
+    {
+      title: "Senior Citizens",
+      value: analyticsData.data.seniorCitizens,
+      color: "bg-purple-500",
+    },
+    {
+      title: "Family Plannings",
+      value: analyticsData.data.familyPlannings,
+      color: "bg-pink-500",
+    },
+  ];
+
+  const monthlyData = Object.entries(analyticsData.data.monthlyResponse)
+    .map(([month, count]) => ({
+      month,
+      Profiles: count,
+    }))
+    .reverse();
 
   return (
-    <div className="p-4 sm:p-6 md:p-8  min-h-screen">
-      <div className="grid grid-cols-1 sm:grid-cols-2  gap-4 mb-8">
+    <div className="p-4 sm:p-6 md:p-8 min-h-screen">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {profileData.map((item, index) => (
           <Card
             key={item.title}
             className={`transition-transform ${
               item.color
-            } duration-300 ease-in-out  ${
+            } duration-300 ease-in-out ${
               hoveredCard === index ? "transform -translate-y-1 skew-y-1" : ""
             }`}
             onMouseEnter={() => setHoveredCard(index)}
@@ -58,14 +133,14 @@ export default function HealthDashboard() {
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-gray-700">
-            Barangay Health Profiles
+            Monthly Health Profiles
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={data}
+                data={monthlyData}
                 margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
               >
                 <defs>
@@ -85,7 +160,7 @@ export default function HealthDashboard() {
                 <Tooltip />
                 <Area
                   type="monotone"
-                  dataKey="profiles"
+                  dataKey="Profiles"
                   stroke="#3B82F6"
                   fillOpacity={1}
                   fill="url(#colorProfiles)"

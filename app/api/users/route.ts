@@ -6,12 +6,23 @@ export async function GET() {
   try {
     await connectToMongoDB();
     const users = await UserModel.find().exec();
-
-    return NextResponse.json(users);
+    if (!users) {
+      return NextResponse.json(
+        { success: false, message: "No users found" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json({
+      success: true,
+      message: "Successfully loaded the data",
+      data: users,
+    });
   } catch (error) {
-    console.error(error);
     return NextResponse.json(
-      { error: "Failed to export users" },
+      {
+        success: false,
+        message: error,
+      },
       { status: 500 }
     );
   }

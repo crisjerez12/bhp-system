@@ -21,6 +21,7 @@ import {
 import { Eye, Edit, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { deleteHousehold } from "@/app/actions/household-response";
 
 type Household = {
   _id: string;
@@ -99,16 +100,11 @@ export default function HouseholdReportComponent() {
 
   const totalPages = Math.ceil(filteredHouseholds.length / itemsPerPage);
 
-  // const handleSeeData = (id: string) => {
-  //   console.log(`See data for household ${id}`);
-  // };
-
-  // const handleEdit = (id: string) => {
-  //   console.log(`Edit household ${id}`);
-  // };
-
-  const handleDelete = (id: string) => {
-    console.log(`Delete household ${id}`);
+  const handleDelete = async (id: string) => {
+    const res = await deleteHousehold(id);
+    if (res?.success) {
+      console.log("Successfully deleted!");
+    }
   };
 
   return (

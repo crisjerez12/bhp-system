@@ -1,12 +1,12 @@
 import connectToMongoDB from "@/lib/connection";
-import HouseholdModel from "@/lib/models/households";
+import SeniorCitizenModel from "@/lib/models/senior-citizen";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
     await connectToMongoDB();
-    const households = await HouseholdModel.find().exec();
-    if (!households) {
+    const seniorCitizens = await SeniorCitizenModel.find().exec();
+    if (!seniorCitizens) {
       return NextResponse.json(
         { success: false, message: "No record found" },
         { status: 404 }
@@ -15,7 +15,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       message: "Successfully loaded the data",
-      data: households,
+      data: seniorCitizens,
     });
   } catch (error) {
     return NextResponse.json(

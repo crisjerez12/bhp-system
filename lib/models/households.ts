@@ -26,15 +26,20 @@ const MemberSchema: Schema = new Schema({
   occupation: { type: String, required: true },
 });
 
-const HouseholdSchema: Schema = new Schema({
-  householdName: { type: String, required: true },
-  householdType: { type: String, required: true },
-  nhtsStatus: { type: String, required: true },
-  toilet: { type: String, required: true },
-  assignedStaff: { type: String, required: true },
-  address: { type: String, required: true },
-  members: { type: [MemberSchema], required: true },
-});
+const HouseholdSchema: Schema = new Schema(
+  {
+    householdName: { type: String, required: true },
+    householdType: { type: String, required: true },
+    nhtsStatus: { type: String, required: true },
+    toilet: { type: String, required: true },
+    assignedStaff: { type: String, required: true },
+    address: { type: String, required: true },
+    members: { type: [MemberSchema], required: true },
+  },
+  {
+    timestamps: true,
+  }
+);
 const HouseholdModel =
   mongoose.models.Household || mongoose.model("Household", HouseholdSchema);
 export default HouseholdModel;

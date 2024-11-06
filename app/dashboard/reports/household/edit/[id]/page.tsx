@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -25,7 +26,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { createHousehold } from "@/app/actions/household-response";
+import { Input } from "@/components/ui/input";
+import { updateHousehold } from "@/app/actions/household-response";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 type HouseholdMember = {
   firstName: string;
@@ -36,6 +40,7 @@ type HouseholdMember = {
 };
 
 type FormData = {
+  id: string;
   householdName: string;
   householdType: "nuclear" | "extended" | "single" | "other" | "";
   nhtsStatus: "poor" | "non-poor" | "";
@@ -46,6 +51,7 @@ type FormData = {
 };
 
 const initialFormData: FormData = {
+  id: "",
   householdName: "",
   householdType: "",
   nhtsStatus: "",
@@ -55,19 +61,58 @@ const initialFormData: FormData = {
   members: [],
 };
 
-export default function HouseholdFormComponent() {
+export default function EditHouseholdFormComponent() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const params = useParams();
+  const router = useRouter();
+  const id = params?.id as string;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`/api/household/${id}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch household data");
+        }
+        const householdData = await response.json();
+        setFormData({ ...householdData, id });
+      } catch (err) {
+        setError("An error occurred while fetching the data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [id]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (addMemberDialogOpen || editDialogOpen) return;
-    const res = await createHousehold(formData);
-    if (res?.success) {
-      setFormData(initialFormData);
-    } else {
-      console.log("error");
+    if (addMemberDialogOpen || editDialogOpen || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const res = await updateHousehold(formData);
+      if (res?.success) {
+        router.push("/dashboard/reports/household");
+      } else {
+        throw new Error("Failed to update household");
+      }
+    } catch (error) {
+      console.log(error);
+      setError("An error occurred while updating the household");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -106,8 +151,37 @@ export default function HouseholdFormComponent() {
     setFormData(initialFormData);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <svg className="animate-spin h-5 w-5 mr-3 " viewBox="0 0 24 24"></svg>
+        <span className="ml-2 text-lg">Loading household data...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-600 text-lg">{error}</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen px-8">
+      <div className="flex items-center justify-between py-4">
+        <Link href="/dashboard/reports/household/">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Household Reports
+          </Button>
+        </Link>
+      </div>
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
@@ -117,15 +191,14 @@ export default function HouseholdFormComponent() {
             >
               Household Name
             </Label>
-            <input
+            <Input
               id="householdName"
-              type="text"
               value={formData.householdName}
               onChange={(e) =>
                 handleInputChange("householdName", e.target.value)
               }
               placeholder="Enter household surname"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              disabled={isSubmitting}
             />
           </div>
           <div>
@@ -143,11 +216,9 @@ export default function HouseholdFormComponent() {
                   value as FormData["householdType"]
                 )
               }
+              disabled={isSubmitting}
             >
-              <SelectTrigger
-                id="householdType"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
+              <SelectTrigger id="householdType">
                 <SelectValue placeholder="Select household type" />
               </SelectTrigger>
               <SelectContent>
@@ -204,6 +275,7 @@ export default function HouseholdFormComponent() {
                       size="sm"
                       className="mr-2 text-blue-600 border-blue-600 hover:bg-blue-50"
                       onClick={() => handleEditMember(index)}
+                      disabled={isSubmitting}
                     >
                       Edit
                     </Button>
@@ -211,6 +283,7 @@ export default function HouseholdFormComponent() {
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDeleteMember(index)}
+                      disabled={isSubmitting}
                     >
                       Delete
                     </Button>
@@ -223,6 +296,7 @@ export default function HouseholdFormComponent() {
             type="button"
             className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
             onClick={() => setAddMemberDialogOpen(true)}
+            disabled={isSubmitting}
           >
             Add Member
           </Button>
@@ -241,11 +315,9 @@ export default function HouseholdFormComponent() {
               onValueChange={(value) =>
                 handleInputChange("nhtsStatus", value as FormData["nhtsStatus"])
               }
+              disabled={isSubmitting}
             >
-              <SelectTrigger
-                id="nhtsStatus"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
+              <SelectTrigger id="nhtsStatus">
                 <SelectValue placeholder="Select NHTS status" />
               </SelectTrigger>
               <SelectContent>
@@ -266,11 +338,9 @@ export default function HouseholdFormComponent() {
               onValueChange={(value) =>
                 handleInputChange("toilet", value as FormData["toilet"])
               }
+              disabled={isSubmitting}
             >
-              <SelectTrigger
-                id="toilet"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
+              <SelectTrigger id="toilet">
                 <SelectValue placeholder="Select toilet status" />
               </SelectTrigger>
               <SelectContent>
@@ -297,11 +367,9 @@ export default function HouseholdFormComponent() {
                   value as FormData["assignedStaff"]
                 )
               }
+              disabled={isSubmitting}
             >
-              <SelectTrigger
-                id="assignedStaff"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
+              <SelectTrigger id="assignedStaff">
                 <SelectValue placeholder="Select assigned staff" />
               </SelectTrigger>
               <SelectContent>
@@ -322,11 +390,9 @@ export default function HouseholdFormComponent() {
             <Select
               value={formData.address}
               onValueChange={(value) => handleInputChange("address", value)}
+              disabled={isSubmitting}
             >
-              <SelectTrigger
-                id="address"
-                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
+              <SelectTrigger id="address">
                 <SelectValue placeholder="Select address" />
               </SelectTrigger>
               <SelectContent>
@@ -346,14 +412,16 @@ export default function HouseholdFormComponent() {
             variant="outline"
             onClick={handleResetForm}
             className="border-blue-600 text-blue-600 hover:bg-blue-50"
+            disabled={isSubmitting}
           >
             Reset
           </Button>
           <Button
             type="submit"
             className="bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={isSubmitting}
           >
-            Submit
+            {isSubmitting ? <>Updating...</> : "Update Household"}
           </Button>
         </div>
       </form>
@@ -366,6 +434,7 @@ export default function HouseholdFormComponent() {
           <MemberForm
             onSubmit={handleAddMember}
             onCancel={() => setAddMemberDialogOpen(false)}
+            isSubmitting={isSubmitting}
           />
         </DialogContent>
       </Dialog>
@@ -380,6 +449,7 @@ export default function HouseholdFormComponent() {
               onSubmit={handleSaveChanges}
               onCancel={() => setEditDialogOpen(false)}
               initialData={formData.members[editingIndex]}
+              isSubmitting={isSubmitting}
             />
           )}
         </DialogContent>
@@ -392,9 +462,15 @@ type MemberFormProps = {
   onSubmit: (data: HouseholdMember) => void;
   onCancel: () => void;
   initialData?: HouseholdMember;
+  isSubmitting: boolean;
 };
 
-function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
+function MemberForm({
+  onSubmit,
+  onCancel,
+  initialData,
+  isSubmitting,
+}: MemberFormProps) {
   const [member, setMember] = useState<HouseholdMember>(
     initialData || {
       firstName: "",
@@ -405,7 +481,7 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
     }
   );
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleMemberSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSubmit(member);
   };
@@ -415,38 +491,38 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleMemberSubmit} className="space-y-4">
       <div>
         <Label htmlFor="firstName">First Name</Label>
-        <input
+        <Input
           type="text"
           id="firstName"
           value={member.firstName}
           required
           onChange={(e) => handleInputChange("firstName", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          disabled={isSubmitting}
         />
       </div>
       <div>
         <Label htmlFor="lastName">Last Name</Label>
-        <input
+        <Input
           type="text"
           id="lastName"
           required
           value={member.lastName}
           onChange={(e) => handleInputChange("lastName", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          disabled={isSubmitting}
         />
       </div>
       <div>
         <Label htmlFor="birthdate">Birthdate</Label>
-        <input
+        <Input
           type="date"
           id="birthdate"
           required
           value={member.birthdate}
           onChange={(e) => handleInputChange("birthdate", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500  focus:border-blue-500"
+          disabled={isSubmitting}
         />
       </div>
       <div>
@@ -457,6 +533,7 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
             handleInputChange("gender", value)
           }
           className="flex space-x-4"
+          disabled={isSubmitting}
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="Male" id="male" />
@@ -470,20 +547,27 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
       </div>
       <div>
         <Label htmlFor="occupation">Occupation</Label>
-        <input
+        <Input
           type="text"
           id="occupation"
           required
           value={member.occupation}
           onChange={(e) => handleInputChange("occupation", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          disabled={isSubmitting}
         />
       </div>
       <div className="flex justify-between space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
           Cancel
         </Button>
-        <Button type="submit">Submit</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? <>Submitting...</> : "Submit"}
+        </Button>
       </div>
     </form>
   );

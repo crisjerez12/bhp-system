@@ -1,7 +1,6 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
-// Define the interface for the Pregnant document
-interface IPregnant extends Document {
+export interface IPregnant {
   firstName: string;
   lastName: string;
   birthDate: Date;
@@ -16,7 +15,6 @@ interface IPregnant extends Document {
   address: string;
 }
 
-// Create the schema for the Pregnant model
 export const PregnantSchema: Schema = new Schema(
   {
     firstName: { type: String, required: true },

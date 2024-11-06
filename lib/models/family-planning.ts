@@ -1,20 +1,19 @@
-import mongoose, { Schema, Document } from "mongoose";
-
-// Define the interface for the Pregnant document
-interface IFamilyPlanning extends Document {
+import mongoose, { Schema } from "mongoose";
+export interface IFamilyPlanning {
   firstName: string;
   lastName: string;
   birthDate: Date;
   age: number;
   assignedStaff: string;
+  controlType: string;
   address: string;
 }
 
-// Create the schema for the Pregnant model
 export const FamilyPlanningSchema: Schema = new Schema(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
+    controlType: { type: String, required: true },
     birthDate: { type: Date, required: true },
     age: { type: Number, required: true },
     assignedStaff: { type: String, required: true },
@@ -25,8 +24,8 @@ export const FamilyPlanningSchema: Schema = new Schema(
   }
 );
 
-const FamilyPlanning =
+const FamilyPlanningModel =
   mongoose.models.FamilyPlanning ||
   mongoose.model<IFamilyPlanning>("FamilyPlanning", FamilyPlanningSchema);
 
-export default FamilyPlanning;
+export default FamilyPlanningModel;
