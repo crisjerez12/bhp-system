@@ -18,36 +18,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit, Trash2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { deleteSeniorCitizenRecord } from "@/app/actions/senior-response";
-
-type SeniorCitizenRecord = {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  age: number;
-  assignedStaff: string;
-  address: string;
-};
-
-const purokOptions = Array.from({ length: 10 }, (_, i) => `Purok ${i + 1}`);
-const staffOptions = ["Nurse Garcia", "Midwife Lim", "Dr. Tan"];
+import { ISeniorCitizen } from "@/lib/models/senior-citizen";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { fetchUsersData, PUROKS } from "@/lib/constants";
 
 export default function SeniorCitizenReports() {
   const [lastNameSearch, setLastNameSearch] = useState("");
   const [addressFilter, setAddressFilter] = useState("all");
   const [staffFilter, setStaffFilter] = useState("all");
-  const [records, setRecords] = useState<SeniorCitizenRecord[]>([]);
+  const [records, setRecords] = useState<ISeniorCitizen[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 5;
-  const router = useRouter();
-
+  const [staffList, setStaffList] = useState<string[]>([]);
   useEffect(() => {
     fetchSeniorCitizenData();
+    const loadStaffData = async () => {
+      const data = await fetchUsersData();
+      setStaffList(data);
+    };
+    loadStaffData();
   }, []);
 
   const fetchSeniorCitizenData = async () => {
@@ -84,13 +88,30 @@ export default function SeniorCitizenReports() {
 
   const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
 
-  const handleDelete = async (id: string) => {
-    await deleteSeniorCitizenRecord(id);
-    router.push("/dashboard/reports/senior-citizen");
+  const handleDelete = async (id: string | undefined) => {
+    try {
+      await deleteSeniorCitizenRecord(id);
+      await fetchSeniorCitizenData();
+    } catch (error) {
+      console.error("Error deleting record:", error);
+      setError("Failed to delete the record. Please try again.");
+    }
   };
 
   return (
     <div className="flex flex-col min-h-screen">
+      <div className="flex items-center justify-between">
+        <Link href="/dashboard/reports/">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Records
+          </Button>
+        </Link>
+      </div>
       <main className="flex-grow p-4 md:p-6 lg:p-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Input
@@ -106,7 +127,7 @@ export default function SeniorCitizenReports() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Puroks</SelectItem>
-              {purokOptions.map((purok) => (
+              {PUROKS.map((purok) => (
                 <SelectItem key={purok} value={purok}>
                   {purok}
                 </SelectItem>
@@ -119,8 +140,8 @@ export default function SeniorCitizenReports() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Staff</SelectItem>
-              {staffOptions.map((staff) => (
-                <SelectItem key={staff} value={staff}>
+              {staffList.map((staff, index) => (
+                <SelectItem key={index} value={staff}>
                   {staff}
                 </SelectItem>
               ))}
@@ -163,9 +184,7 @@ export default function SeniorCitizenReports() {
                     <TableCell>
                       <div className="flex space-x-2">
                         <Link
-                          href={
-                            "/dashboard/reports/senior-citizen/" + record._id
-                          }
+                          href={`/dashboard/reports/senior-citizen/${record._id}`}
                         >
                           <Button size="sm" variant="outline" className="p-1">
                             <Eye className="h-4 w-4" />
@@ -173,25 +192,40 @@ export default function SeniorCitizenReports() {
                           </Button>
                         </Link>
                         <Link
-                          href={
-                            "/dashboard/reports/senior-citizen/edit/" +
-                            record._id
-                          }
+                          href={`/dashboard/reports/senior-citizen/edit/${record._id}`}
                         >
                           <Button size="sm" variant="outline" className="p-1">
                             <Edit className="h-4 w-4" />
                             <span className="sr-only">Edit</span>
                           </Button>
                         </Link>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(record._id)}
-                          className="p-1"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline" className="p-1">
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-white">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Are you sure you want to delete this record?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete the senior citizen record.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(record._id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>

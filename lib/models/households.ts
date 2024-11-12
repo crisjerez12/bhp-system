@@ -9,6 +9,7 @@ export interface Member {
 }
 
 export interface HouseholdType {
+  _id?: string;
   householdName: string;
   householdType: string;
   nhtsStatus: string;
@@ -40,6 +41,8 @@ const HouseholdSchema: Schema = new Schema(
     timestamps: true,
   }
 );
+
 const HouseholdModel =
   mongoose.models.Household || mongoose.model("Household", HouseholdSchema);
+
 export default HouseholdModel;

@@ -1,32 +1,49 @@
 "use client";
 
 import { submitMotherInfo } from "@/app/actions/pregnant-response";
-import React, { useState, useEffect } from "react";
+import SubmitButton from "@/components/SubmitButton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { fetchUsersData, PUROKS } from "@/lib/constants";
+import { useState, useEffect } from "react";
 
 export default function MothersForm() {
-  const [age, setAge] = useState<number | string>("");
-  const [birthDate, setBirthDate] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [key, setKey] = useState(+new Date());
+  const [staffList, setStaffList] = useState<string[]>([]);
 
   useEffect(() => {
-    if (birthDate) {
-      const today = new Date();
-      const birthDateObj = new Date(birthDate);
-      let calculatedAge = today.getFullYear() - birthDateObj.getFullYear();
-      const monthDiff = today.getMonth() - birthDateObj.getMonth();
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDateObj.getDate())
-      ) {
-        calculatedAge--;
+    const loadStaffData = async () => {
+      const data = await fetchUsersData();
+      setStaffList(data);
+    };
+    loadStaffData();
+  }, []);
+
+  async function handleSubmit(formData: FormData) {
+    setIsSubmitting(true);
+    try {
+      const res = await submitMotherInfo(formData);
+      if (!res?.success) {
+        throw new Error("Submission Failed");
       }
-      setAge(calculatedAge.toString());
+      setKey(+new Date());
+    } catch (error) {
+      console.error("Form submission failed:", error);
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [birthDate]);
+  }
 
   return (
-    <div className="min-h-screen   p-4">
-      <div className="w-full space-y-8 bg-white  ">
-        <form action={submitMotherInfo} className="space-y-6">
+    <div className="min-h-screen p-4">
+      <div className="w-full space-y-8 bg-white">
+        <form key={key} action={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label
@@ -71,23 +88,6 @@ export default function MothersForm() {
                 type="date"
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                onChange={(e) => setBirthDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label
-                htmlFor="age"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Age
-              </label>
-              <input
-                id="age"
-                name="age"
-                type="number"
-                value={age}
-                readOnly
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-gray-100"
               />
             </div>
             <div className="space-y-2">
@@ -97,16 +97,15 @@ export default function MothersForm() {
               >
                 Taking Ferrous
               </label>
-              <select
-                id="ferrous"
-                name="takingFerrous"
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              >
-                <option value="">Select</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
+              <Select name="takingFerrous">
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Yes</SelectItem>
+                  <SelectItem value="false">No</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <label
@@ -187,18 +186,18 @@ export default function MothersForm() {
               >
                 Assigned Staff
               </label>
-              <select
-                id="staff"
-                name="assignedStaff"
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              >
-                <option value="">Select Assigned Staff</option>
-                <option value="maria">Maria Santos</option>
-                <option value="josefina">Josefina Cruz</option>
-                <option value="elena">Elena Reyes</option>
-                <option value="isabella">Isabella Garcia</option>
-              </select>
+              <Select name="assignedStaff">
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Assigned Staff" />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffList.map((staff, index) => (
+                    <SelectItem key={index} value={staff}>
+                      {staff}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2 md:col-span-2">
               <label
@@ -207,38 +206,40 @@ export default function MothersForm() {
               >
                 Address (Purok)
               </label>
-              <select
-                id="address"
-                name="address"
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              >
-                <option value="">Select Purok</option>
-                {[...Array(10)].map((_, i) => (
-                  <option key={i + 1} value={`Purok ${i + 1}`}>
-                    Purok {i + 1}
-                  </option>
-                ))}
-              </select>
+              <Select name="address">
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Purok" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PUROKS.map((purok, i) => (
+                    <SelectItem key={i} value={purok}>
+                      {purok}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="flex items-center justify-between space-x-4 mt-6">
             <button
               type="reset"
-              className="py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="py-2 px-4 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              onClick={() => setKey(+new Date())}
             >
               Reset
             </button>
-            <button
-              type="submit"
-              className="py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Submit
-            </button>
+            <SubmitButton />
           </div>
         </form>
       </div>
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-lg">
+            <p className="text-lg font-semibold">Submitting form...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -38,12 +38,12 @@ interface UserData {
   firstName: string;
   lastName: string;
   username: string;
-  email: string;
   password: string;
 }
 
 export interface User extends Omit<UserData, "password"> {
   _id: string;
+  role: string;
 }
 
 export default function Component() {
@@ -54,14 +54,12 @@ export default function Component() {
     firstName: "Juan",
     lastName: "Dela Cruz",
     username: "juandelacruz",
-    email: "juan@example.com",
     password: "password123",
   });
   const [newStaffData, setNewStaffData] = useState<UserData>({
     firstName: "",
     lastName: "",
     username: "",
-    email: "",
     password: "",
   });
   const [users, setUsers] = useState<User[]>([]);
@@ -73,10 +71,15 @@ export default function Component() {
     const fetchUsers = async () => {
       try {
         const response = await fetch("/api/users");
-        const data = await response.json();
-        setUsers(data);
+        const result = await response.json();
+        if (result.success) {
+          setUsers(result.data);
+        } else {
+          console.error("Failed to fetch users:", result.message);
+          setUsers([]);
+        }
       } catch (error) {
-        console.error("Failed to fetch users:", error);
+        console.error("Error fetching users:", error);
         setUsers([]);
       }
     };
@@ -92,7 +95,6 @@ export default function Component() {
         firstName: formData.get("firstName") as string,
         lastName: formData.get("lastName") as string,
         username: formData.get("username") as string,
-        email: formData.get("email") as string,
         password: formData.get("password") as string,
       };
       try {
@@ -121,7 +123,6 @@ export default function Component() {
       firstName: "",
       lastName: "",
       username: "",
-      email: "",
       password: "",
     });
   };
@@ -194,30 +195,18 @@ export default function Component() {
                 disabled={!editing}
               />
             </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={userData.email}
-                onChange={handleInputChange}
-                disabled={!editing}
-              />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  name="password"
-                  type={editing && showPassword ? "text" : "password"}
-                  value={userData.password}
-                  onChange={handleInputChange}
-                  disabled={!editing}
-                  className="pr-10"
-                />
-                {editing && (
+            {editing && (
+              <div>
+                <Label htmlFor="password">New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={userData.password}
+                    onChange={handleInputChange}
+                    className="pr-10"
+                  />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -230,9 +219,9 @@ export default function Component() {
                       <Eye className="h-4 w-4" />
                     )}
                   </button>
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
           <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
             {editing ? "Save" : "Edit Credentials"}
@@ -286,21 +275,6 @@ export default function Component() {
               />
             </div>
             <div>
-              <Label htmlFor="newEmail">Email</Label>
-              <Input
-                id="newEmail"
-                name="email"
-                type="email"
-                value={newStaffData.email}
-                onChange={(e) =>
-                  setNewStaffData((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div>
               <Label htmlFor="newPassword">Password</Label>
               <Input
                 id="newPassword"
@@ -329,7 +303,7 @@ export default function Component() {
               <TableHead>First Name</TableHead>
               <TableHead>Last Name</TableHead>
               <TableHead>Username</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -339,7 +313,7 @@ export default function Component() {
                 <TableCell>{user.firstName}</TableCell>
                 <TableCell>{user.lastName}</TableCell>
                 <TableCell>{user.username}</TableCell>
-                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.role}</TableCell>
                 <TableCell>
                   <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                     <DialogTrigger asChild>
@@ -406,13 +380,17 @@ export default function Component() {
                             />
                           </div>
                           <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="updateEmail" className="text-right">
-                              Email
+                            <Label
+                              htmlFor="updatePassword"
+                              className="text-right"
+                            >
+                              New Password
                             </Label>
                             <Input
-                              id="updateEmail"
-                              name="email"
-                              value={updatedUserData?.email || ""}
+                              id="updatePassword"
+                              name="password"
+                              type="password"
+                              placeholder="Enter new password"
                               onChange={handleUpdateInputChange}
                               className="col-span-3"
                             />

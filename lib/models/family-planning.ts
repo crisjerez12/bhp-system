@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 export interface IFamilyPlanning {
+  _id?: string;
   firstName: string;
   lastName: string;
   birthDate: Date;

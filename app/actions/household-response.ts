@@ -2,7 +2,6 @@
 
 import connectToMongoDB from "@/lib/connection";
 import HouseholdModel, { HouseholdType } from "@/lib/models/households";
-type UpdateHouseholdType = HouseholdType & { id: string };
 export async function createHousehold(data: HouseholdType) {
   try {
     await connectToMongoDB();
@@ -29,16 +28,16 @@ export async function createHousehold(data: HouseholdType) {
   }
 }
 
-export async function updateHousehold(data: UpdateHouseholdType) {
+export async function updateHousehold(data: HouseholdType) {
   try {
     await connectToMongoDB();
-    const { id, ...updateData } = data;
-    if (!id) {
+    const { _id, ...updateData } = data;
+    if (!_id) {
       throw new Error("Household ID is required for updating");
     }
 
     const updatedHousehold = await HouseholdModel.findByIdAndUpdate(
-      id,
+      _id,
       updateData,
       { new: true, runValidators: true }
     );
@@ -63,7 +62,7 @@ export async function updateHousehold(data: UpdateHouseholdType) {
     };
   }
 }
-export async function deleteHousehold(id: string) {
+export async function deleteHousehold(id: string | undefined) {
   try {
     await connectToMongoDB();
     if (!id) {

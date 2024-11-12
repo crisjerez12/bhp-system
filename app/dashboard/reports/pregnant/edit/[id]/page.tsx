@@ -1,6 +1,9 @@
 "use client";
 
-import { updateMotherInfo } from "@/app/actions/pregnant-response";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -9,169 +12,122 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { IPregnant } from "@/lib/models/pregnant";
-import { useParams } from "next/navigation";
-import React, { useState, useEffect } from "react";
+import { fetchUsersData, PUROKS } from "@/lib/constants";
+import { updateMotherInfo } from "@/app/actions/pregnant-response";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
-const staffMembers = [
-  "Maria Santos",
-  "Juana Dela Cruz",
-  "Rosario Fernandez",
-  "Lourdes Garcia",
-  "Carmela Reyes",
-];
-const puroks = Array.from({ length: 10 }, (_, i) => `Purok ${i + 1}`);
-
-export default function MothersForm() {
-  const [age, setAge] = useState<number | string>("");
-  const [birthDate, setBirthDate] = useState<string>("");
-  const [formData, setFormData] = useState<IPregnant | undefined>();
-  const params = useParams();
-  const id = params?.id as string;
-
-  useEffect(() => {
-    if (birthDate) {
-      const today = new Date();
-      const birthDateObj = new Date(birthDate);
-      let calculatedAge = today.getFullYear() - birthDateObj.getFullYear();
-      const monthDiff = today.getMonth() - birthDateObj.getMonth();
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDateObj.getDate())
-      ) {
-        calculatedAge--;
-      }
-      setAge(calculatedAge.toString());
-    }
-  }, [birthDate]);
-
+export default function Component({ params }: { params: { id: string } }) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [staffList, setStaffList] = useState<string[]>([]);
+  const [formData, setFormData] = useState<IPregnant | null>(null);
+  const router = useRouter();
   useEffect(() => {
     const fetchData = async () => {
-      if (id) {
-        try {
-          const response = await fetch(`/api/pregnant/${id}`);
-          const data = await response.json();
-          if (data.success) {
-            setFormData(data.data);
-            const date = new Date(data.data.birthDate);
-            const formattedDate = date.toISOString().split("T")[0];
-            setBirthDate(formattedDate);
-          }
-        } catch (error) {
-          console.error("Error fetching data:", error);
+      try {
+        const response = await fetch(`/api/pregnant/${params.id}`);
+        const result = await response.json();
+        if (result.success) {
+          setFormData(result.data);
         }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchData();
-  }, [id]);
 
-  const updateFormData = (name: keyof IPregnant, value: string | boolean) => {
-    setFormData((prev) => {
-      if (!prev) return undefined;
-      if (name === "takingFerrous") {
-        return { ...prev, [name]: value === "true" };
+    const loadStaffData = async () => {
+      const data = await fetchUsersData();
+      setStaffList(data);
+    };
+
+    fetchData();
+    loadStaffData();
+  }, [params.id]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const form = e.currentTarget;
+      const formData = new FormData(form);
+      formData.append("_id", params.id); // Add the ID to the FormData
+      const result = await updateMotherInfo(formData);
+      if (!result?.success) {
+        throw new Error("Update failed");
       }
-      return { ...prev, [name]: value };
-    });
+      router.push("/dashboard/reports/pregnant");
+    } catch (error) {
+      console.error("Form submission failed:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isLoading) {
+    return <div className="p-4">Loading...</div>;
+  }
+
+  if (!formData) {
+    return <div className="p-4">No data found</div>;
+  }
 
   return (
     <div className="min-h-screen p-4">
-      <div className="w-full space-y-8 bg-white">
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            formData.append("_id", id);
-            const birthDate = formData.get("birthDate");
-            if (birthDate && typeof birthDate === "string") {
-              formData.set("birthDate", new Date(birthDate).toISOString());
-            }
-            await updateMotherInfo(formData);
-          }}
-          className="space-y-6"
-        >
+      <div className="flex items-center justify-between">
+        <Link href="/dashboard/reports/pregnant/">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Pregnant Records
+          </Button>
+        </Link>
+      </div>
+      <div className="mx-auto mt-2 bg-white">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label
-                htmlFor="first-name"
-                className="block text-sm font-medium text-gray-700"
-              >
-                First name
-              </label>
-              <input
-                id="first-name"
+              <Label htmlFor="firstName">First name</Label>
+              <Input
+                id="firstName"
                 name="firstName"
-                type="text"
+                defaultValue={formData.firstName}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                defaultValue={formData?.firstName || ""}
               />
             </div>
             <div className="space-y-2">
-              <label
-                htmlFor="last-name"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Last name
-              </label>
-              <input
-                id="last-name"
+              <Label htmlFor="lastName">Last name</Label>
+              <Input
+                id="lastName"
                 name="lastName"
-                type="text"
+                defaultValue={formData.lastName}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                defaultValue={formData?.lastName || ""}
               />
             </div>
             <div className="space-y-2">
-              <label
-                htmlFor="birthday"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Birthday
-              </label>
-              <input
-                id="birthday"
+              <Label htmlFor="birthDate">Birthday</Label>
+              <Input
+                id="birthDate"
                 name="birthDate"
                 type="date"
+                defaultValue={(formData.birthDate + "").split("T")[0]}
                 required
-                value={birthDate}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                onChange={(e) => setBirthDate(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <label
-                htmlFor="age"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Age
-              </label>
-              <input
-                id="age"
-                name="age"
-                type="number"
-                value={age}
-                readOnly
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-gray-100"
-              />
-            </div>
-            <div className="space-y-2">
-              <label
-                htmlFor="ferrous"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Taking Ferrous
-              </label>
+              <Label htmlFor="takingFerrous">Taking Ferrous</Label>
               <Select
                 name="takingFerrous"
-                value={formData?.takingFerrous ? "true" : "false"}
-                onValueChange={(value) =>
-                  updateFormData("takingFerrous", value)
-                }
+                defaultValue={formData.takingFerrous.toString()}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select" />
+                <SelectTrigger>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="true">Yes</SelectItem>
@@ -180,105 +136,70 @@ export default function MothersForm() {
               </Select>
             </div>
             <div className="space-y-2">
-              <label
-                htmlFor="weight"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Weight (kg)
-              </label>
-              <input
+              <Label htmlFor="weight">Weight (kg)</Label>
+              <Input
                 id="weight"
                 name="weight"
                 type="number"
                 step="0.1"
+                defaultValue={formData.weight}
                 required
-                defaultValue={formData?.weight || ""}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
               />
             </div>
             <div className="space-y-2">
-              <label
-                htmlFor="blood-pressure"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Blood Pressure
-              </label>
+              <Label>Blood Pressure</Label>
               <div className="grid grid-cols-2 gap-2">
-                <input
-                  id="systolic"
+                <Input
                   name="systolic"
-                  type="number"
-                  required
-                  defaultValue={formData?.systolic || ""}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                   placeholder="Systolic"
-                />
-                <input
-                  id="diastolic"
-                  name="diastolic"
                   type="number"
+                  defaultValue={formData.systolic}
                   required
-                  defaultValue={formData?.diastolic || ""}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                />
+                <Input
+                  name="diastolic"
                   placeholder="Diastolic"
+                  type="number"
+                  defaultValue={formData.diastolic}
+                  required
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label
-                htmlFor="pregnancy-duration"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Pregnancy Duration
-              </label>
+              <Label>Pregnancy Duration</Label>
               <div className="grid grid-cols-2 gap-2">
-                <input
-                  id="months"
+                <Input
                   name="months"
+                  placeholder="Months"
                   type="number"
                   min="0"
                   max="9"
+                  defaultValue={formData.months}
                   required
-                  defaultValue={formData?.months || ""}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                  placeholder="Months"
                 />
-                <input
-                  id="weeks"
+                <Input
                   name="weeks"
+                  placeholder="Weeks"
                   type="number"
                   min="0"
                   max="3"
+                  defaultValue={formData.weeks}
                   required
-                  defaultValue={formData?.weeks || ""}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                  placeholder="Weeks"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label
-                htmlFor="staff"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Assigned Staff
-              </label>
+              <Label htmlFor="assignedStaff">Assigned Staff</Label>
               <Select
                 name="assignedStaff"
-                value={formData?.assignedStaff}
-                onValueChange={(value) =>
-                  updateFormData("assignedStaff", value)
-                }
+                defaultValue={formData.assignedStaff}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Staff" />
+                <SelectTrigger>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {staffMembers.map((staff, index) => (
-                    <SelectItem
-                      key={index}
-                      value={staff.toLowerCase().replace(" ", "-")}
-                    >
+                  {staffList.map((staff, index) => (
+                    <SelectItem key={index} value={staff}>
                       {staff}
                     </SelectItem>
                   ))}
@@ -286,26 +207,14 @@ export default function MothersForm() {
               </Select>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label
-                htmlFor="address"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Address (Purok)
-              </label>
-              <Select
-                name="address"
-                value={formData?.address}
-                onValueChange={(value) => updateFormData("address", value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Purok" />
+              <Label htmlFor="address">Address (Purok)</Label>
+              <Select name="address" defaultValue={formData.address}>
+                <SelectTrigger>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {puroks.map((purok, index) => (
-                    <SelectItem
-                      key={index}
-                      value={purok.toLowerCase().replace(" ", "-")}
-                    >
+                  {PUROKS.map((purok, i) => (
+                    <SelectItem key={i} value={purok}>
                       {purok}
                     </SelectItem>
                   ))}
@@ -313,22 +222,22 @@ export default function MothersForm() {
               </Select>
             </div>
           </div>
-          <div className="flex items-center justify-between space-x-4 mt-6">
-            <button
-              type="reset"
-              className="py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
-            >
-              Reset
-            </button>
-            <button
-              type="submit"
-              className="py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-            >
-              Submit
-            </button>
+
+          <div className="flex justify-end space-x-4">
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
         </form>
       </div>
+
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-lg">
+            <p className="text-lg font-semibold">Saving changes...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

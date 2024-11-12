@@ -18,38 +18,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Edit, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Eye, Edit, Trash2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { deleteHousehold } from "@/app/actions/household-response";
-
-type Household = {
-  _id: string;
-  householdName: string;
-  householdType: string;
-  nhtsStatus: string;
-  toilet: string;
-  assignedStaff: string;
-  address: string;
-  members: Array<{
-    firstName: string;
-    lastName: string;
-    birthdate: string;
-    gender: string;
-    occupation: string;
-    _id: string;
-  }>;
-};
-
-const purokOptions = Array.from({ length: 10 }, (_, i) => `purok-${i + 1}`);
-const staffOptions = [
-  "Maria Cruz",
-  "Juana Dela Cruz",
-  "Rosa Fernandez",
-  "Elena Santos",
-  "Isabel Ramos",
-];
-const householdTypes = ["All", "Nuclear", "Extended", "Single Parent"];
+import { HouseholdType } from "@/lib/models/households";
+import {
+  FAMILY_TYPE,
+  fetchUsersData,
+  NHTS_STATUS,
+  PUROKS,
+} from "@/lib/constants";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function HouseholdReportComponent() {
   const [nameSearch, setNameSearch] = useState("");
@@ -57,17 +43,19 @@ export default function HouseholdReportComponent() {
   const [staffFilter, setStaffFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("All");
   const [nhtsFilter, setNhtsFilter] = useState("all");
-  const [households, setHouseholds] = useState<Household[]>([]);
+  const [households, setHouseholds] = useState<HouseholdType[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [staffList, setStaffList] = useState<string[]>([]);
+  const [deleteId, setDeleteId] = useState<string | undefined>(undefined);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchHouseholds = async () => {
       try {
         const response = await fetch("/api/household");
         const data = await response.json();
-        setHouseholds(data);
+        setHouseholds(data.data);
       } catch (error) {
         console.error("Failed to fetch households:", error);
       } finally {
@@ -75,8 +63,15 @@ export default function HouseholdReportComponent() {
       }
     };
 
+    const loadStaffData = async () => {
+      const data = await fetchUsersData();
+      setStaffList(data);
+    };
     fetchHouseholds();
+    loadStaffData();
   }, []);
+
+  const itemsPerPage = 10;
 
   const filteredHouseholds = households.filter(
     (household) =>
@@ -85,12 +80,8 @@ export default function HouseholdReportComponent() {
         .includes(nameSearch.toLowerCase()) &&
       (addressFilter === "all" || household.address === addressFilter) &&
       (staffFilter === "all" || household.assignedStaff === staffFilter) &&
-      (typeFilter === "All" ||
-        household.householdType === typeFilter.toLowerCase()) &&
-      (nhtsFilter === "all" ||
-        (nhtsFilter === "poor"
-          ? household.nhtsStatus === "poor"
-          : household.nhtsStatus === "non-poor"))
+      (typeFilter === "All" || household.householdType === typeFilter) &&
+      (nhtsFilter === "all" || household.nhtsStatus === nhtsFilter)
   );
 
   const paginatedHouseholds = filteredHouseholds.slice(
@@ -100,15 +91,36 @@ export default function HouseholdReportComponent() {
 
   const totalPages = Math.ceil(filteredHouseholds.length / itemsPerPage);
 
-  const handleDelete = async (id: string) => {
-    const res = await deleteHousehold(id);
-    if (res?.success) {
-      console.log("Successfully deleted!");
+  const handleDeleteClick = (id: string | undefined) => {
+    setDeleteId(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteId) {
+      const res = await deleteHousehold(deleteId);
+      if (res?.success) {
+        console.log("Successfully deleted!");
+        setHouseholds(households.filter((h) => h._id !== deleteId));
+      }
     }
+    setIsDeleteDialogOpen(false);
   };
 
   return (
     <div className="flex flex-col min-h-screen">
+      <div className="flex items-center justify-between">
+        <Link href="/dashboard/reports/">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Reports
+          </Button>
+        </Link>
+      </div>
       <main className="flex-grow p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           <Input
@@ -124,7 +136,7 @@ export default function HouseholdReportComponent() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Puroks</SelectItem>
-              {purokOptions.map((purok) => (
+              {PUROKS.map((purok) => (
                 <SelectItem key={purok} value={purok}>
                   {purok}
                 </SelectItem>
@@ -137,7 +149,7 @@ export default function HouseholdReportComponent() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Staff</SelectItem>
-              {staffOptions.map((staff) => (
+              {staffList.map((staff) => (
                 <SelectItem key={staff} value={staff}>
                   {staff}
                 </SelectItem>
@@ -149,7 +161,8 @@ export default function HouseholdReportComponent() {
               <SelectValue placeholder="Filter by Type" />
             </SelectTrigger>
             <SelectContent>
-              {householdTypes.map((type) => (
+              <SelectItem value="All">All Types</SelectItem>
+              {FAMILY_TYPE.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>
@@ -162,8 +175,11 @@ export default function HouseholdReportComponent() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All NHTS</SelectItem>
-              <SelectItem value="poor">Poor</SelectItem>
-              <SelectItem value="non-poor">Non-Poor</SelectItem>
+              {NHTS_STATUS.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
@@ -182,10 +198,8 @@ export default function HouseholdReportComponent() {
                   <TableHead className="font-bold text-center">
                     # of members
                   </TableHead>
-                  <TableHead className="font-bold">NHTS</TableHead>
                   <TableHead className="font-bold">Assigned Staff</TableHead>
                   <TableHead className="font-bold">Address</TableHead>
-                  <TableHead className="font-bold">Toilet</TableHead>
                   <TableHead className="font-bold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -199,30 +213,8 @@ export default function HouseholdReportComponent() {
                     <TableCell className="text-center">
                       {household.members.length}
                     </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          household.nhtsStatus === "poor"
-                            ? "bg-red-600"
-                            : "bg-green-600"
-                        }
-                      >
-                        {household.nhtsStatus}
-                      </Badge>
-                    </TableCell>
                     <TableCell>{household.assignedStaff}</TableCell>
                     <TableCell>{household.address}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          household.toilet === "yes"
-                            ? "bg-green-600"
-                            : "bg-red-600"
-                        }
-                      >
-                        {household.toilet}
-                      </Badge>
-                    </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Link
@@ -246,7 +238,7 @@ export default function HouseholdReportComponent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDelete(household._id)}
+                          onClick={() => handleDeleteClick(household._id)}
                           className="p-1"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -286,6 +278,29 @@ export default function HouseholdReportComponent() {
           </div>
         </div>
       </main>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-white">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this household record? This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

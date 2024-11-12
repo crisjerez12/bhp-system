@@ -13,54 +13,30 @@ import {
 } from "@/components/ui/select";
 import { X } from "lucide-react";
 import { createSeniorCitizen } from "@/app/actions/senior-response";
-
-const staffMembers = [
-  "Maria Santos",
-  "Juana Dela Cruz",
-  "Rosario Fernandez",
-  "Lourdes Garcia",
-  "Carmela Reyes",
-];
-
-const puroks = Array.from({ length: 10 }, (_, i) => `Purok ${i + 1}`);
+import { fetchUsersData, PUROKS } from "@/lib/constants";
 
 export default function SeniorCitizenForm() {
-  const [age, setAge] = useState(0);
   const [medicines, setMedicines] = useState<string[]>([]);
   const [medicineName, setMedicineName] = useState("");
-  const formWithMedicine = (formData: FormData) => {
-    medicines.forEach((medicine) => formData.append("medicines[]", medicine));
-    createSeniorCitizen(formData);
-  };
+  const [staffList, setStaffList] = useState<string[]>([]);
+  const [key, setKey] = useState(+new Date());
   useEffect(() => {
-    const birthdayInput = document.getElementById(
-      "birthday"
-    ) as HTMLInputElement;
-    if (birthdayInput) {
-      birthdayInput.addEventListener("change", calculateAge);
-    }
-    return () => {
-      if (birthdayInput) {
-        birthdayInput.removeEventListener("change", calculateAge);
-      }
+    const loadStaffData = async () => {
+      const data = await fetchUsersData();
+      setStaffList(data);
     };
+    loadStaffData();
   }, []);
-
-  const calculateAge = () => {
-    const birthdayInput = document.getElementById(
-      "birthday"
-    ) as HTMLInputElement;
-    if (birthdayInput.value) {
-      const birthDate = new Date(birthdayInput.value);
-      const today = new Date();
-      let calculatedAge = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        calculatedAge--;
+  const formWithMedicine = async (formData: FormData) => {
+    medicines.forEach((medicine) => formData.append("medicines[]", medicine));
+    try {
+      const res = await createSeniorCitizen(formData);
+      if (!res.success) {
+        throw new Error(res?.message);
       }
-      setAge(calculatedAge);
-    } else {
-      setAge(0);
+      setKey(+new Date());
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -80,6 +56,7 @@ export default function SeniorCitizenForm() {
 
   return (
     <form
+      key={key}
       action={formWithMedicine}
       id="seniorCitizenForm"
       className="space-y-8"
@@ -128,18 +105,6 @@ export default function SeniorCitizenForm() {
             type="date"
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="age" className="text-sm font-medium text-gray-700">
-            Age
-          </Label>
-          <Input
-            id="age"
-            name="age"
-            value={age}
-            readOnly
-            className="w-full bg-gray-100"
           />
         </div>
         <div className="space-y-2">
@@ -194,11 +159,8 @@ export default function SeniorCitizenForm() {
               <SelectValue placeholder="Select Staff" />
             </SelectTrigger>
             <SelectContent>
-              {staffMembers.map((staff, index) => (
-                <SelectItem
-                  key={index}
-                  value={staff.toLowerCase().replace(" ", "-")}
-                >
+              {staffList.map((staff, index) => (
+                <SelectItem key={index} value={staff}>
                   {staff}
                 </SelectItem>
               ))}
@@ -217,54 +179,54 @@ export default function SeniorCitizenForm() {
               <SelectValue placeholder="Select Purok" />
             </SelectTrigger>
             <SelectContent>
-              {puroks.map((purok, index) => (
-                <SelectItem
-                  key={index}
-                  value={purok.toLowerCase().replace(" ", "-")}
-                >
+              {PUROKS.map((purok, index) => (
+                <SelectItem key={index} value={purok}>
                   {purok}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      </div>
-      <div className="space-y-4">
-        <Label htmlFor="medicine" className="text-sm font-medium text-gray-700">
-          Medicines
-        </Label>
-        <div className="flex space-x-2">
-          <Input
-            id="medicine"
-            value={medicineName}
-            onChange={(e) => setMedicineName(e.target.value)}
-            placeholder="Enter medicine name"
-            className="flex-grow"
-          />
-          <Button
-            type="button"
-            onClick={handleAddMedicine}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        <div className="space-y-2">
+          <Label
+            htmlFor="medicine"
+            className="text-sm font-medium text-gray-700"
           >
-            Add
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {medicines.map((medicine, index) => (
-            <div
-              key={index}
-              className="bg-secondary text-secondary-foreground text-sm py-1 px-2 rounded-full flex items-center"
+            Medicines
+          </Label>
+          <div className="flex space-x-2">
+            <Input
+              id="medicine"
+              value={medicineName}
+              onChange={(e) => setMedicineName(e.target.value)}
+              placeholder="Enter medicine name"
+              className="flex-grow"
+            />
+            <Button
+              type="button"
+              onClick={handleAddMedicine}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              {medicine}
-              <button
-                type="button"
-                onClick={() => handleRemoveMedicine(medicine)}
-                className="ml-2 text-secondary-foreground/70 hover:text-secondary-foreground"
+              Add
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {medicines.map((medicine, index) => (
+              <div
+                key={index}
+                className="bg-secondary text-secondary-foreground text-sm py-1 px-2 rounded-full flex items-center"
               >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
+                {medicine}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveMedicine(medicine)}
+                  className="ml-2 text-secondary-foreground/70 hover:text-secondary-foreground"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -274,7 +236,7 @@ export default function SeniorCitizenForm() {
           variant="outline"
           className="border-primary text-primary hover:bg-primary/10"
           onClick={() => {
-            setAge(0);
+            setKey(+new Date());
             setMedicines([]);
             setMedicineName("");
           }}

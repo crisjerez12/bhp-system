@@ -23,9 +23,11 @@ interface Member {
   birthdate: string;
   gender: string;
   occupation: string;
+  _id: string;
 }
 
 interface HouseholdData {
+  _id: string;
   householdName: string;
   householdType: string;
   nhtsStatus: string;
@@ -33,7 +35,14 @@ interface HouseholdData {
   assignedStaff: string;
   address: string;
   createdAt: string;
+  updatedAt: string;
   members: Member[];
+}
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data: HouseholdData;
 }
 
 export default function SeeHouseholdData() {
@@ -50,8 +59,12 @@ export default function SeeHouseholdData() {
         if (!response.ok) {
           throw new Error("Failed to fetch household data");
         }
-        const householdData: HouseholdData = await response.json();
-        setData(householdData);
+        const result: ApiResponse = await response.json();
+        if (result.success) {
+          setData(result.data);
+        } else {
+          throw new Error(result.message);
+        }
       } catch (err) {
         setError("An error occurred while fetching the data");
       } finally {
@@ -135,6 +148,17 @@ export default function SeeHouseholdData() {
                         }
                       )}
                     />
+                    <DataItem
+                      label="Last Updated"
+                      value={new Date(data.updatedAt).toLocaleDateString(
+                        "en-US",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )}
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -161,8 +185,8 @@ export default function SeeHouseholdData() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.members.map((member, index) => (
-                      <TableRow key={index}>
+                    {data.members.map((member) => (
+                      <TableRow key={member._id}>
                         <TableCell className="font-medium">
                           {member.firstName} {member.lastName}
                         </TableCell>

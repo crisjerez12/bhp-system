@@ -18,35 +18,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit, Trash2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { IFamilyPlanning } from "@/lib/models/family-planning";
+import { CONTROL_TYPE, fetchUsersData, PUROKS } from "@/lib/constants";
 import { deleteFamilyPlanningRecord } from "@/app/actions/family-planning-response";
-import { useRouter } from "next/navigation";
-type FamilyPlanningRecord = {
-  _id: string;
-  lastName: string;
-  firstName: string;
-  age: number;
-  controlType: string;
-  assignedStaff: string;
-  address: string;
-};
-
-const purokOptions = Array.from({ length: 10 }, (_, i) => `Purok ${i + 1}`);
-const staffOptions = ["Nurse Garcia", "Midwife Lim", "Dr. Tan"];
 
 export default function FamilyPlanningReports() {
   const [lastNameSearch, setLastNameSearch] = useState("");
   const [addressFilter, setAddressFilter] = useState("all");
   const [staffFilter, setStaffFilter] = useState("all");
-  const [records, setRecords] = useState<FamilyPlanningRecord[]>([]);
+  const [controlTypeFilter, setControlTypeFilter] = useState("all");
+  const [records, setRecords] = useState<IFamilyPlanning[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [staffList, setStaffList] = useState<string[]>([]);
+
   const itemsPerPage = 5;
-  const router = useRouter();
   useEffect(() => {
     fetchFamilyPlanningData();
+    const loadStaffData = async () => {
+      const data = await fetchUsersData();
+      setStaffList(data);
+    };
+    loadStaffData();
   }, []);
 
   const fetchFamilyPlanningData = async () => {
@@ -58,7 +65,7 @@ export default function FamilyPlanningReports() {
         throw new Error("Failed to fetch data");
       }
       const data = await response.json();
-      setRecords(data);
+      setRecords(data.data);
     } catch (err) {
       setError(
         "An error occurred while fetching data. Please try again later."
@@ -73,7 +80,8 @@ export default function FamilyPlanningReports() {
     (record) =>
       record.lastName.toLowerCase().includes(lastNameSearch.toLowerCase()) &&
       (addressFilter === "all" || record.address === addressFilter) &&
-      (staffFilter === "all" || record.assignedStaff === staffFilter)
+      (staffFilter === "all" || record.assignedStaff === staffFilter) &&
+      (controlTypeFilter === "all" || record.controlType === controlTypeFilter)
   );
 
   const paginatedRecords = filteredRecords.slice(
@@ -83,15 +91,33 @@ export default function FamilyPlanningReports() {
 
   const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
 
-  const handleDelete = async (id: string) => {
-    await deleteFamilyPlanningRecord(id);
-    router.push("/dashboard/reports/family-planning");
+  const handleDelete = async (id: string | undefined) => {
+    const res = await deleteFamilyPlanningRecord(id);
+    if (res instanceof Error) {
+      return res;
+    }
+    if (!res?.success) {
+      throw new Error("Failed to delete");
+    }
+    fetchFamilyPlanningData();
   };
 
   return (
     <div className="flex flex-col min-h-screen">
+      <div className="flex items-center justify-between">
+        <Link href="/dashboard/reports/">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Records
+          </Button>
+        </Link>
+      </div>
       <main className="flex-grow p-4 md:p-6 lg:p-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <Input
             type="text"
             placeholder="Search by last name"
@@ -105,7 +131,7 @@ export default function FamilyPlanningReports() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Puroks</SelectItem>
-              {purokOptions.map((purok) => (
+              {PUROKS.map((purok) => (
                 <SelectItem key={purok} value={purok}>
                   {purok}
                 </SelectItem>
@@ -118,9 +144,25 @@ export default function FamilyPlanningReports() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Staff</SelectItem>
-              {staffOptions.map((staff) => (
+              {staffList.map((staff) => (
                 <SelectItem key={staff} value={staff}>
                   {staff}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={controlTypeFilter}
+            onValueChange={setControlTypeFilter}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Filter by Control Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Control Types</SelectItem>
+              {CONTROL_TYPE.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -141,12 +183,10 @@ export default function FamilyPlanningReports() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-blue-100">
-                  <TableHead className="font-bold">Last Name</TableHead>
                   <TableHead className="font-bold">First Name</TableHead>
+                  <TableHead className="font-bold">Last Name</TableHead>
+                  <TableHead className="font-bold">Control Type</TableHead>
                   <TableHead className="font-bold text-center">Age</TableHead>
-                  <TableHead className="font-bold">
-                    Family Planning Control Type
-                  </TableHead>
                   <TableHead className="font-bold">Assigned Staff</TableHead>
                   <TableHead className="font-bold">Address</TableHead>
                   <TableHead className="font-bold">Actions</TableHead>
@@ -155,20 +195,18 @@ export default function FamilyPlanningReports() {
               <TableBody>
                 {paginatedRecords.map((record) => (
                   <TableRow key={record._id} className="hover:bg-blue-50">
+                    <TableCell>{record.firstName}</TableCell>
                     <TableCell className="font-medium">
                       {record.lastName}
                     </TableCell>
-                    <TableCell>{record.firstName}</TableCell>
-                    <TableCell className="text-center">{record.age}</TableCell>
                     <TableCell>{record.controlType}</TableCell>
+                    <TableCell className="text-center">{record.age}</TableCell>
                     <TableCell>{record.assignedStaff}</TableCell>
                     <TableCell>{record.address}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Link
-                          href={
-                            "/dashboard/reports/family-planning/" + record._id
-                          }
+                          href={`/dashboard/reports/family-planning/${record._id}`}
                         >
                           <Button size="sm" variant="outline" className="p-1">
                             <Eye className="h-4 w-4" />
@@ -176,25 +214,40 @@ export default function FamilyPlanningReports() {
                           </Button>
                         </Link>
                         <Link
-                          href={
-                            "/dashboard/reports/family-planning/edit/" +
-                            record._id
-                          }
+                          href={`/dashboard/reports/family-planning/edit/${record._id}`}
                         >
                           <Button size="sm" variant="outline" className="p-1">
                             <Edit className="h-4 w-4" />
                             <span className="sr-only">Edit</span>
                           </Button>
                         </Link>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(record._id)}
-                          className="p-1"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline" className="p-1">
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-white">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Are you sure you want to delete this record?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete the family planning record.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(record?._id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -234,18 +287,5 @@ export default function FamilyPlanningReports() {
 }
 
 function SkeletonTable() {
-  return (
-    <div className="space-y-4">
-      {[...Array(5)].map((_, i) => (
-        <div key={i} className="flex space-x-4">
-          {[...Array(7)].map((_, j) => (
-            <div
-              key={j}
-              className="h-8 bg-blue-200 rounded w-1/7 animate-pulse"
-            ></div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
+  return <div className="space-y-4">Loading</div>;
 }

@@ -1,17 +1,20 @@
 "use server";
 
 import connectToMongoDB from "@/lib/connection";
+import { calculateAge, capitalizeName } from "@/lib/Functions";
 import PregnantModel from "@/lib/models/pregnant";
 import { IPregnant } from "@/lib/models/pregnant";
 
 export async function submitMotherInfo(formData: FormData) {
   try {
     await connectToMongoDB();
+    const birthDate = new Date(formData.get("birthDate") as string);
+
     const pregnantResponse: Partial<IPregnant> = {
-      firstName: formData.get("firstName") as string,
-      lastName: formData.get("lastName") as string,
-      birthDate: new Date(formData.get("birthDate") as string),
-      age: parseInt(formData.get("age") as string),
+      firstName: capitalizeName(formData.get("firstName") as string),
+      lastName: capitalizeName(formData.get("lastName") as string),
+      birthDate: birthDate,
+      age: calculateAge(birthDate),
       takingFerrous: Boolean(formData.get("takingFerrous")),
       weight: parseFloat(formData.get("weight") as string),
       systolic: parseInt(formData.get("systolic") as string),
@@ -21,19 +24,32 @@ export async function submitMotherInfo(formData: FormData) {
       assignedStaff: formData.get("assignedStaff") as string,
       address: formData.get("address") as string,
     };
+    const duplicateInfo = await PregnantModel.findOne({
+      firstName: pregnantResponse.firstName,
+      lastName: pregnantResponse.lastName,
+    });
+    if (duplicateInfo) {
+      throw new Error("Duplicate records found");
+    }
     const data = new PregnantModel(pregnantResponse);
     const savedData = await data.save();
-    if (savedData) {
-      return { success: true, message: "Successfully Recorded" };
+    if (!savedData) {
+      throw new Error("Data aren't saved");
     }
+    return { success: true, message: "Successfully Recorded" };
   } catch (error) {
-    console.error("Something went wrong:", error);
-    throw error;
+    return {
+      success: false,
+      message: "Error creating Pregnant Info Record",
+      error: (error as Error).message || "Unknown error",
+    };
   }
 }
 export async function updateMotherInfo(formData: FormData) {
   try {
     await connectToMongoDB();
+    const birthDate = new Date(formData.get("birthDate") as string);
+
     const pregnantData = {
       _id: formData.get("_id"),
       firstName: formData.get("firstName"),
@@ -45,8 +61,7 @@ export async function updateMotherInfo(formData: FormData) {
       diastolic: formData.get("diastolic"),
       months: formData.get("months"),
       weeks: formData.get("weeks"),
-      age: formData.get("age"),
-      birthDate: formData.get("birthDate"),
+      age: calculateAge(birthDate),
       assignedStaff: formData.get("assignedStaff"),
     };
     if (!pregnantData._id) {

@@ -2,18 +2,19 @@
 
 import connectToMongoDB from "@/lib/connection";
 import connectToDatabase from "@/lib/connection";
-import SeniorCitizenModel, {
-  ISeniorCitizen,
-} from "@/lib/models/senior-citizen";
+import { calculateAge } from "@/lib/Functions";
+import SeniorCitizenModel from "@/lib/models/senior-citizen";
 
 export async function createSeniorCitizen(formData: FormData) {
   try {
     await connectToDatabase();
+    const birthDate = new Date(formData.get("birthDate") as string);
+
     const seniorResponse = {
       firstName: formData.get("firstName"),
       lastName: formData.get("lastName"),
-      birthDate: formData.get("birthDate"),
-      age: formData.get("age"),
+      birthDate: birthDate,
+      age: calculateAge(birthDate),
       weight: formData.get("weight"),
       systolic: formData.get("systolic"),
       diastolic: formData.get("diastolic"),
@@ -21,38 +22,64 @@ export async function createSeniorCitizen(formData: FormData) {
       address: formData.get("address"),
       medicines: formData.getAll("medicines[]"),
     };
+    const duplicateInfo = await SeniorCitizenModel.findOne({
+      firstName: seniorResponse.firstName,
+      lastName: seniorResponse.lastName,
+    });
+    if (duplicateInfo) {
+      throw new Error("Duplicate records found");
+    }
     const seniorCitizen = new SeniorCitizenModel(seniorResponse);
-
-    await seniorCitizen.save();
-
+    const savedData = await seniorCitizen.save();
+    if (!savedData) {
+      throw new Error("Data aren't saved");
+    }
     return { success: true, message: "Senior Citizen created successfully!" };
   } catch (error) {
-    console.error("Error creating Senior Citizen:", error);
     return { success: false, message: "Failed to create Senior Citizen" };
   }
 }
-export async function updateSeniorCitizenRecord(data: ISeniorCitizen) {
-  await connectToDatabase();
+export async function updateSeniorCitizenRecord(formData: FormData) {
+  try {
+    await connectToDatabase();
+    const _id = formData.get("_id");
+    if (!_id) {
+      throw new Error("Household ID is required for updating");
+    }
+    const birthDate = new Date(formData.get("birthDate") as string);
+    const seniorResponse = {
+      firstName: formData.get("firstName"),
+      lastName: formData.get("lastName"),
+      birthDate: birthDate,
+      age: calculateAge(birthDate),
+      weight: formData.get("weight"),
+      systolic: formData.get("systolic"),
+      diastolic: formData.get("diastolic"),
+      assignedStaff: formData.get("assignedStaff"),
+      address: formData.get("address"),
+      medicines: formData.getAll("medicines[]"),
+    };
 
-  const { _id, ...updateData } = data;
-  if (!_id) {
-    throw new Error("Household ID is required for updating");
+    const updatedHousehold = await SeniorCitizenModel.findByIdAndUpdate(
+      _id,
+      seniorResponse,
+      { new: true, runValidators: true }
+    );
+    if (!updatedHousehold) {
+      throw new Error("failed to update the record");
+    }
+    return {
+      success: true,
+      message: "Successfully Updated the record",
+    };
+  } catch (error) {
+    return {
+      sucess: false,
+      message: "Update Failed",
+    };
   }
-
-  const updatedHousehold = await SeniorCitizenModel.findByIdAndUpdate(
-    _id,
-    updateData,
-    { new: true, runValidators: true }
-  );
-  if (!updatedHousehold) {
-    throw new Error("failed to update the record");
-  }
-  return {
-    success: true,
-    message: "Successfully Updated the record",
-  };
 }
-export async function deleteSeniorCitizenRecord(id: string) {
+export async function deleteSeniorCitizenRecord(id: string | undefined) {
   try {
     await connectToMongoDB();
     if (!id) {
@@ -76,7 +103,6 @@ export async function deleteSeniorCitizenRecord(id: string) {
       };
     }
   } catch (error) {
-    console.error("Error deleting Senior Citizen Record:", error);
     return {
       success: false,
       message: "Error deleting Senior Citizen Record",

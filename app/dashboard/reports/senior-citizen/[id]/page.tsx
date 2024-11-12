@@ -9,25 +9,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, UserCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-
-interface SeniorCitizenData {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  birthDate: string;
-  age: number;
-  weight: number;
-  systolic: number;
-  diastolic: number;
-  assignedStaff: string;
-  address: string;
-  medicines: string[];
-}
+import { ISeniorCitizen } from "@/lib/models/senior-citizen";
 
 export default function SeniorCitizen() {
   const params = useParams();
   const id = params?.id as string;
-  const [data, setData] = useState<SeniorCitizenData | null>(null);
+  const [data, setData] = useState<ISeniorCitizen | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +45,7 @@ export default function SeniorCitizen() {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto p-6 space-y-8">
         <div className="flex items-center justify-between">
-          <Link href="/dashboard/reports/senior-citizens/">
+          <Link href="/dashboard/reports/senior-citizen/">
             <Button
               variant="outline"
               size="sm"
@@ -126,7 +113,7 @@ export default function SeniorCitizen() {
                       Medicines
                     </span>
                     <div className="flex flex-wrap gap-2">
-                      {data.medicines.map((medicine, index) => (
+                      {data.medicines?.map((medicine, index) => (
                         <Badge key={index} variant="secondary">
                           {medicine}
                         </Badge>

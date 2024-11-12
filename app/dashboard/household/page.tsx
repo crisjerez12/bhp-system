@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -26,57 +26,68 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { createHousehold } from "@/app/actions/household-response";
-
-type HouseholdMember = {
-  firstName: string;
-  lastName: string;
-  birthdate: string;
-  gender: "Male" | "Female";
-  occupation: string;
-};
-
-type FormData = {
-  householdName: string;
-  householdType: "nuclear" | "extended" | "single" | "other" | "";
-  nhtsStatus: "poor" | "non-poor" | "";
-  toilet: "yes" | "no" | "";
-  assignedStaff: "maria" | "isabel" | "andrea" | "sofia" | "";
-  address: string;
-  members: HouseholdMember[];
-};
-
-const initialFormData: FormData = {
-  householdName: "",
-  householdType: "",
-  nhtsStatus: "",
-  toilet: "",
-  assignedStaff: "",
-  address: "",
-  members: [],
-};
+import SubmitButton from "@/components/SubmitButton";
+import {
+  FAMILY_TYPE,
+  fetchUsersData,
+  NHTS_STATUS,
+  PUROKS,
+  WITH_TOILET,
+} from "@/lib/constants";
+import { Member, HouseholdType } from "@/lib/models/households";
 
 export default function HouseholdFormComponent() {
-  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const handleSubmit = async (e: FormEvent) => {
+  const [key, setKey] = useState(+new Date());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [staffList, setStaffList] = useState<string[]>([]);
+  const [formData, setFormData] = useState<HouseholdType>({
+    householdName: "",
+    householdType: "",
+    nhtsStatus: "",
+    toilet: "",
+    assignedStaff: "",
+    address: "",
+    members: [],
+  });
+
+  useEffect(() => {
+    const loadStaffData = async () => {
+      const data = await fetchUsersData();
+      setStaffList(data);
+    };
+    loadStaffData();
+  }, []);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (addMemberDialogOpen || editDialogOpen) return;
+    setIsSubmitting(true);
     const res = await createHousehold(formData);
     if (res?.success) {
-      setFormData(initialFormData);
+      setFormData({
+        householdName: "",
+        householdType: "",
+        nhtsStatus: "",
+        toilet: "",
+        assignedStaff: "",
+        address: "",
+        members: [],
+      });
+      setKey(+new Date());
     } else {
-      console.log("error");
+      console.error("Error submitting form:", res?.error);
     }
+    setIsSubmitting(false);
   };
 
-  const handleInputChange = (name: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddMember = (member: HouseholdMember) => {
-    setFormData((prev) => ({ ...prev, members: [...prev.members, member] }));
+  const handleAddMember = (member: Member) => {
+    setFormData((prev) => ({
+      ...prev,
+      members: [...prev.members, member],
+    }));
     setAddMemberDialogOpen(false);
   };
 
@@ -85,11 +96,13 @@ export default function HouseholdFormComponent() {
     setEditDialogOpen(true);
   };
 
-  const handleSaveChanges = (member: HouseholdMember) => {
+  const handleSaveChanges = (member: Member) => {
     if (editingIndex !== null) {
-      const updatedMembers = [...formData.members];
-      updatedMembers[editingIndex] = member;
-      setFormData((prev) => ({ ...prev, members: updatedMembers }));
+      setFormData((prev) => {
+        const updatedMembers = [...prev.members];
+        updatedMembers[editingIndex] = member;
+        return { ...prev, members: updatedMembers };
+      });
       setEditDialogOpen(false);
       setEditingIndex(null);
     }
@@ -102,13 +115,13 @@ export default function HouseholdFormComponent() {
     }));
   };
 
-  const handleResetForm = () => {
-    setFormData(initialFormData);
+  const handleInputChange = (name: keyof HouseholdType, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
     <div className="min-h-screen p-8">
-      <form onSubmit={handleSubmit}>
+      <form key={key} onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
             <Label
@@ -136,12 +149,8 @@ export default function HouseholdFormComponent() {
               Household Type
             </Label>
             <Select
-              value={formData.householdType}
               onValueChange={(value) =>
-                handleInputChange(
-                  "householdType",
-                  value as FormData["householdType"]
-                )
+                handleInputChange("householdType", value)
               }
             >
               <SelectTrigger
@@ -151,10 +160,11 @@ export default function HouseholdFormComponent() {
                 <SelectValue placeholder="Select household type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="nuclear">Nuclear Family</SelectItem>
-                <SelectItem value="extended">Extended Family</SelectItem>
-                <SelectItem value="single">Single Person</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                {FAMILY_TYPE.map((type, i) => (
+                  <SelectItem key={i + 1} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -237,10 +247,7 @@ export default function HouseholdFormComponent() {
               NHTS Status
             </Label>
             <Select
-              value={formData.nhtsStatus}
-              onValueChange={(value) =>
-                handleInputChange("nhtsStatus", value as FormData["nhtsStatus"])
-              }
+              onValueChange={(value) => handleInputChange("nhtsStatus", value)}
             >
               <SelectTrigger
                 id="nhtsStatus"
@@ -249,8 +256,11 @@ export default function HouseholdFormComponent() {
                 <SelectValue placeholder="Select NHTS status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="poor">Poor</SelectItem>
-                <SelectItem value="non-poor">Non-Poor</SelectItem>
+                {NHTS_STATUS.map((type, i) => (
+                  <SelectItem key={i + 1} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -262,10 +272,7 @@ export default function HouseholdFormComponent() {
               Toilet
             </Label>
             <Select
-              value={formData.toilet}
-              onValueChange={(value) =>
-                handleInputChange("toilet", value as FormData["toilet"])
-              }
+              onValueChange={(value) => handleInputChange("toilet", value)}
             >
               <SelectTrigger
                 id="toilet"
@@ -274,8 +281,11 @@ export default function HouseholdFormComponent() {
                 <SelectValue placeholder="Select toilet status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="yes">Yes</SelectItem>
-                <SelectItem value="no">No</SelectItem>
+                {WITH_TOILET.map((has, i) => (
+                  <SelectItem key={i + 1} value={has}>
+                    {has}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -290,12 +300,8 @@ export default function HouseholdFormComponent() {
               Assigned Staff
             </Label>
             <Select
-              value={formData.assignedStaff}
               onValueChange={(value) =>
-                handleInputChange(
-                  "assignedStaff",
-                  value as FormData["assignedStaff"]
-                )
+                handleInputChange("assignedStaff", value)
               }
             >
               <SelectTrigger
@@ -305,10 +311,11 @@ export default function HouseholdFormComponent() {
                 <SelectValue placeholder="Select assigned staff" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="maria">Maria Santos</SelectItem>
-                <SelectItem value="isabel">Isabel Cruz</SelectItem>
-                <SelectItem value="andrea">Andrea Reyes</SelectItem>
-                <SelectItem value="sofia">Sofia Gonzales</SelectItem>
+                {staffList.map((name, i) => (
+                  <SelectItem key={i + 1} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -320,7 +327,6 @@ export default function HouseholdFormComponent() {
               Address
             </Label>
             <Select
-              value={formData.address}
               onValueChange={(value) => handleInputChange("address", value)}
             >
               <SelectTrigger
@@ -330,21 +336,31 @@ export default function HouseholdFormComponent() {
                 <SelectValue placeholder="Select address" />
               </SelectTrigger>
               <SelectContent>
-                {[...Array(10)].map((_, i) => (
-                  <SelectItem key={i} value={`purok-${i + 1}`}>
-                    Purok {i + 1}
+                {PUROKS.map((purok, i) => (
+                  <SelectItem key={i} value={purok}>
+                    {purok}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         </div>
-
         <div className="flex justify-between space-x-4">
           <Button
-            type="button"
+            type="reset"
             variant="outline"
-            onClick={handleResetForm}
+            onClick={() => {
+              setFormData({
+                householdName: "",
+                householdType: "",
+                nhtsStatus: "",
+                toilet: "",
+                assignedStaff: "",
+                address: "",
+                members: [],
+              });
+              setKey(+new Date());
+            }}
             className="border-blue-600 text-blue-600 hover:bg-blue-50"
           >
             Reset
@@ -357,7 +373,13 @@ export default function HouseholdFormComponent() {
           </Button>
         </div>
       </form>
-
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-lg">
+            <p className="text-lg font-semibold">Submitting form...</p>
+          </div>
+        </div>
+      )}
       <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
         <DialogContent className="bg-white">
           <DialogHeader>
@@ -389,13 +411,13 @@ export default function HouseholdFormComponent() {
 }
 
 type MemberFormProps = {
-  onSubmit: (data: HouseholdMember) => void;
+  onSubmit: (data: Member) => void;
   onCancel: () => void;
-  initialData?: HouseholdMember;
+  initialData?: Member;
 };
 
 function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
-  const [member, setMember] = useState<HouseholdMember>(
+  const [member, setMember] = useState<Member>(
     initialData || {
       firstName: "",
       lastName: "",
@@ -410,7 +432,7 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
     onSubmit(member);
   };
 
-  const handleInputChange = (name: keyof HouseholdMember, value: string) => {
+  const handleInputChange = (name: keyof Member, value: string) => {
     setMember((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -422,8 +444,8 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
           type="text"
           id="firstName"
           value={member.firstName}
-          required
           onChange={(e) => handleInputChange("firstName", e.target.value)}
+          required
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
@@ -432,9 +454,9 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
         <input
           type="text"
           id="lastName"
-          required
           value={member.lastName}
           onChange={(e) => handleInputChange("lastName", e.target.value)}
+          required
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
@@ -443,18 +465,18 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
         <input
           type="date"
           id="birthdate"
-          required
           value={member.birthdate}
           onChange={(e) => handleInputChange("birthdate", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500  focus:border-blue-500"
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
       <div>
         <Label>Gender</Label>
         <RadioGroup
           value={member.gender}
-          onValueChange={(value: "Male" | "Female") =>
-            handleInputChange("gender", value)
+          onValueChange={(value) =>
+            handleInputChange("gender", value as "Male" | "Female")
           }
           className="flex space-x-4"
         >
@@ -473,9 +495,9 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
         <input
           type="text"
           id="occupation"
-          required
           value={member.occupation}
           onChange={(e) => handleInputChange("occupation", e.target.value)}
+          required
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
@@ -483,7 +505,7 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">Submit</Button>
+        <SubmitButton />
       </div>
     </form>
   );
