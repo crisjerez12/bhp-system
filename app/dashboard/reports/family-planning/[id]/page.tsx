@@ -10,13 +10,22 @@ import { ArrowLeft, UserCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface FamilyPlanningData {
+  _id: string;
   firstName: string;
   lastName: string;
-  birthday: string;
+  birthDate: string;
   age: number;
   controlType: string;
   assignedStaff: string;
   address: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data: FamilyPlanningData;
 }
 
 export default function FamilyPlanning() {
@@ -33,8 +42,12 @@ export default function FamilyPlanning() {
         if (!response.ok) {
           throw new Error("Failed to fetch family planning data");
         }
-        const familyPlanningData: FamilyPlanningData = await response.json();
-        setData(familyPlanningData);
+        const result: ApiResponse = await response.json();
+        if (result.success) {
+          setData(result.data);
+        } else {
+          throw new Error(result.message);
+        }
       } catch (err) {
         setError("An error occurred while fetching the data");
       } finally {
@@ -46,7 +59,7 @@ export default function FamilyPlanning() {
   }, [id]);
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen">
       <div className="container mx-auto p-6 space-y-8">
         <div className="flex items-center justify-between">
           <Link href="/dashboard/reports/family-planning/">
@@ -92,22 +105,30 @@ export default function FamilyPlanning() {
                   <DataItem label="First Name" value={data.firstName} />
                   <DataItem label="Last Name" value={data.lastName} />
                   <DataItem
-                    label="Birthday"
-                    value={new Date(data.birthday).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    label="Birth Date"
+                    value={new Date(data.birthDate).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
                   />
                   <DataItem label="Age" value={data.age.toString()} />
                 </div>
                 <div className="space-y-4">
-                  <DataItem
-                    label="Family Planning Control Type"
-                    value={data.controlType}
-                  />
+                  <DataItem label="Control Type" value={data.controlType} />
                   <DataItem label="Assigned Staff" value={data.assignedStaff} />
                   <DataItem label="Address" value={data.address} />
+                  <DataItem
+                    label="Created At"
+                    value={new Date(data.createdAt).toLocaleString()}
+                  />
+                  <DataItem
+                    label="Updated At"
+                    value={new Date(data.updatedAt).toLocaleString()}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -134,7 +155,7 @@ function SkeletonLoader() {
         <Skeleton className="h-8 w-3/4 mx-auto" />
       </CardHeader>
       <CardContent className="space-y-4">
-        {[...Array(7)].map((_, index) => (
+        {[...Array(9)].map((_, index) => (
           <Skeleton key={index} className="h-6 w-full" />
         ))}
       </CardContent>

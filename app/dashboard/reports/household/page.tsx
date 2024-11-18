@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Edit, Trash2, ArrowLeft } from "lucide-react";
+import { Eye, Edit, Trash2, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { deleteHousehold } from "@/app/actions/household-response";
 import { HouseholdType } from "@/lib/models/households";
@@ -36,6 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "react-toastify";
 
 export default function HouseholdReportComponent() {
   const [nameSearch, setNameSearch] = useState("");
@@ -50,26 +51,28 @@ export default function HouseholdReportComponent() {
   const [deleteId, setDeleteId] = useState<string | undefined>(undefined);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchHouseholds = async () => {
-      try {
-        const response = await fetch("/api/household");
-        const data = await response.json();
-        setHouseholds(data.data);
-      } catch (error) {
-        console.error("Failed to fetch households:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchHouseholds = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/household");
+      const data = await response.json();
+      setHouseholds(data.data);
+    } catch (error) {
+      console.error("Failed to fetch households:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    const loadStaffData = async () => {
-      const data = await fetchUsersData();
-      setStaffList(data);
-    };
+  const loadStaffData = useCallback(async () => {
+    const data = await fetchUsersData();
+    setStaffList(data);
+  }, []);
+
+  useEffect(() => {
     fetchHouseholds();
     loadStaffData();
-  }, []);
+  }, [fetchHouseholds, loadStaffData]);
 
   const itemsPerPage = 10;
 
@@ -99,12 +102,22 @@ export default function HouseholdReportComponent() {
   const handleConfirmDelete = async () => {
     if (deleteId) {
       const res = await deleteHousehold(deleteId);
-      if (res?.success) {
-        console.log("Successfully deleted!");
+      if (!res?.success) {
+        toast.error(res.message);
         setHouseholds(households.filter((h) => h._id !== deleteId));
       }
+      toast.success(res.message);
     }
     setIsDeleteDialogOpen(false);
+  };
+
+  const handleRefresh = () => {
+    setNameSearch("");
+    setAddressFilter("all");
+    setStaffFilter("all");
+    setTypeFilter("All");
+    setNhtsFilter("all");
+    fetchHouseholds();
   };
 
   return (
@@ -182,8 +195,12 @@ export default function HouseholdReportComponent() {
               ))}
             </SelectContent>
           </Select>
-          <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-            Search
+          <Button
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={handleRefresh}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
           </Button>
         </div>
         {loading ? (

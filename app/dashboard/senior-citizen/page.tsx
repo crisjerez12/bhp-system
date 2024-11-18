@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,12 +15,13 @@ import {
 import { X } from "lucide-react";
 import { createSeniorCitizen } from "@/app/actions/senior-response";
 import { fetchUsersData, PUROKS } from "@/lib/constants";
+import SubmitButton from "@/components/SubmitButton";
 
 export default function SeniorCitizenForm() {
   const [medicines, setMedicines] = useState<string[]>([]);
   const [medicineName, setMedicineName] = useState("");
   const [staffList, setStaffList] = useState<string[]>([]);
-  const [key, setKey] = useState(+new Date());
+
   useEffect(() => {
     const loadStaffData = async () => {
       const data = await fetchUsersData();
@@ -27,16 +29,35 @@ export default function SeniorCitizenForm() {
     };
     loadStaffData();
   }, []);
-  const formWithMedicine = async (formData: FormData) => {
+
+  const handleSubmit = async (formData: FormData) => {
+    // Remove existing medicines from formData
+    formData.delete("medicines[]");
+
+    // Add each medicine to formData
     medicines.forEach((medicine) => formData.append("medicines[]", medicine));
+
     try {
       const res = await createSeniorCitizen(formData);
+
       if (!res.success) {
-        throw new Error(res?.message);
+        if (res.errors) {
+          Object.entries(res.errors).forEach(([field, errors]) => {
+            errors.forEach((error) => toast.error(`${field}: ${error}`));
+          });
+        } else {
+          toast.error(res.message);
+        }
+        return;
       }
-      setKey(+new Date());
+
+      toast.success(res.message);
+      // Reset form
+      setMedicines([]);
+      setMedicineName("");
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      toast.error("An unexpected error occurred");
     }
   };
 
@@ -55,12 +76,7 @@ export default function SeniorCitizenForm() {
   };
 
   return (
-    <form
-      key={key}
-      action={formWithMedicine}
-      id="seniorCitizenForm"
-      className="space-y-8"
-    >
+    <form id="seniorCitizenForm" action={handleSubmit} className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label
@@ -236,19 +252,13 @@ export default function SeniorCitizenForm() {
           variant="outline"
           className="border-primary text-primary hover:bg-primary/10"
           onClick={() => {
-            setKey(+new Date());
             setMedicines([]);
             setMedicineName("");
           }}
         >
           Reset
         </Button>
-        <Button
-          type="submit"
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
-        >
-          Submit
-        </Button>
+        <SubmitButton />
       </div>
     </form>
   );

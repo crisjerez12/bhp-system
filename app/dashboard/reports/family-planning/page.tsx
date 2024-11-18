@@ -34,6 +34,8 @@ import {
 import { IFamilyPlanning } from "@/lib/models/family-planning";
 import { CONTROL_TYPE, fetchUsersData, PUROKS } from "@/lib/constants";
 import { deleteFamilyPlanningRecord } from "@/app/actions/family-planning-response";
+import { toast } from "react-toastify";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function FamilyPlanningReports() {
   const [lastNameSearch, setLastNameSearch] = useState("");
@@ -97,8 +99,9 @@ export default function FamilyPlanningReports() {
       return res;
     }
     if (!res?.success) {
-      throw new Error("Failed to delete");
+      toast.error("Record Deleted Successfully");
     }
+    toast.success(res.message);
     fetchFamilyPlanningData();
   };
 
@@ -287,5 +290,11 @@ export default function FamilyPlanningReports() {
 }
 
 function SkeletonTable() {
-  return <div className="space-y-4">Loading</div>;
+  return (
+    <div className="space-y-4">
+      {[...Array(10)].map((_, index) => (
+        <Skeleton key={index} className="h-6 w-full" />
+      ))}
+    </div>
+  );
 }

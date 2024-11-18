@@ -1,112 +1,161 @@
 "use server";
 
-import connectToMongoDB from "@/lib/connection";
+import { z } from "zod";
 import connectToDatabase from "@/lib/connection";
 import { calculateAge } from "@/lib/Functions";
-import SeniorCitizenModel from "@/lib/models/senior-citizen";
+import SeniorCitizenModel, {
+  ISeniorCitizen,
+} from "@/lib/models/senior-citizen";
 
-export async function createSeniorCitizen(formData: FormData) {
+const SeniorCitizenSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  birthDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: "Invalid date format",
+  }),
+  weight: z.coerce.number().positive("Weight must be a positive number"),
+  systolic: z.coerce
+    .number()
+    .int()
+    .positive("Systolic pressure must be a positive integer"),
+  diastolic: z.coerce
+    .number()
+    .int()
+    .positive("Diastolic pressure must be a positive integer"),
+  assignedStaff: z.string().min(1, "Assigned staff is required"),
+  address: z.string().min(1, "Address is required"),
+  medicines: z.array(z.string()).optional(),
+});
+
+type ActionResult = {
+  success: boolean;
+  message: string;
+  errors?: Record<string, string[]>;
+};
+
+export async function createSeniorCitizen(
+  formData: FormData
+): Promise<ActionResult> {
   try {
     await connectToDatabase();
-    const birthDate = new Date(formData.get("birthDate") as string);
 
-    const seniorResponse = {
-      firstName: formData.get("firstName"),
-      lastName: formData.get("lastName"),
-      birthDate: birthDate,
-      age: calculateAge(birthDate),
-      weight: formData.get("weight"),
-      systolic: formData.get("systolic"),
-      diastolic: formData.get("diastolic"),
-      assignedStaff: formData.get("assignedStaff"),
-      address: formData.get("address"),
-      medicines: formData.getAll("medicines[]"),
+    const rawData: Record<string, any> = {};
+    formData.forEach((value, key) => {
+      if (key === "medicines[]") {
+        rawData.medicines = formData.getAll("medicines[]");
+      } else {
+        rawData[key] = formData.get(key);
+      }
+    });
+
+    const validationResult = SeniorCitizenSchema.safeParse(rawData);
+
+    if (!validationResult.success) {
+      return {
+        success: false,
+        errors: validationResult.error.flatten().fieldErrors,
+        message: "Validation failed",
+      };
+    }
+
+    const { birthDate, ...validatedData } = validationResult.data;
+    const parsedBirthDate = new Date(birthDate);
+
+    const seniorResponse: Omit<ISeniorCitizen, "_id"> = {
+      ...validatedData,
+      birthDate: parsedBirthDate,
+      age: calculateAge(parsedBirthDate),
     };
+
     const duplicateInfo = await SeniorCitizenModel.findOne({
       firstName: seniorResponse.firstName,
       lastName: seniorResponse.lastName,
     });
+
     if (duplicateInfo) {
-      throw new Error("Duplicate records found");
+      return { success: false, message: "Duplicate records found" };
     }
+
     const seniorCitizen = new SeniorCitizenModel(seniorResponse);
     const savedData = await seniorCitizen.save();
+
     if (!savedData) {
-      throw new Error("Data aren't saved");
+      return { success: false, message: "Data not saved" };
     }
+
     return { success: true, message: "Senior Citizen created successfully!" };
   } catch (error) {
+    console.error("Error in createSeniorCitizen:", error);
     return { success: false, message: "Failed to create Senior Citizen" };
   }
 }
-export async function updateSeniorCitizenRecord(formData: FormData) {
+export async function updateSeniorCitizen(
+  formData: FormData
+): Promise<ActionResult> {
   try {
     await connectToDatabase();
-    const _id = formData.get("_id");
-    if (!_id) {
-      throw new Error("Household ID is required for updating");
+
+    const rawData: Record<string, any> = {};
+    formData.forEach((value, key) => {
+      if (key === "medicines[]") {
+        rawData.medicines = formData.getAll("medicines[]");
+      } else {
+        rawData[key] = formData.get(key);
+      }
+    });
+
+    const id = rawData._id;
+    delete rawData._id;
+
+    const validationResult = SeniorCitizenSchema.safeParse(rawData);
+
+    if (!validationResult.success) {
+      return {
+        success: false,
+        errors: validationResult.error.flatten().fieldErrors,
+        message: "Validation failed",
+      };
     }
-    const birthDate = new Date(formData.get("birthDate") as string);
-    const seniorResponse = {
-      firstName: formData.get("firstName"),
-      lastName: formData.get("lastName"),
-      birthDate: birthDate,
-      age: calculateAge(birthDate),
-      weight: formData.get("weight"),
-      systolic: formData.get("systolic"),
-      diastolic: formData.get("diastolic"),
-      assignedStaff: formData.get("assignedStaff"),
-      address: formData.get("address"),
-      medicines: formData.getAll("medicines[]"),
+
+    const { birthDate, ...validatedData } = validationResult.data;
+    const parsedBirthDate = new Date(birthDate);
+
+    const seniorResponse: Omit<ISeniorCitizen, "_id"> = {
+      ...validatedData,
+      birthDate: parsedBirthDate,
+      age: calculateAge(parsedBirthDate),
     };
 
-    const updatedHousehold = await SeniorCitizenModel.findByIdAndUpdate(
-      _id,
+    const updatedSeniorCitizen = await SeniorCitizenModel.findByIdAndUpdate(
+      id,
       seniorResponse,
       { new: true, runValidators: true }
     );
-    if (!updatedHousehold) {
-      throw new Error("failed to update the record");
+
+    if (!updatedSeniorCitizen) {
+      return { success: false, message: "Senior Citizen not found" };
     }
-    return {
-      success: true,
-      message: "Successfully Updated the record",
-    };
+
+    return { success: true, message: "Senior Citizen updated successfully!" };
   } catch (error) {
-    return {
-      sucess: false,
-      message: "Update Failed",
-    };
+    console.error("Error in updateSeniorCitizen:", error);
+    return { success: false, message: "Failed to update Senior Citizen" };
   }
 }
-export async function deleteSeniorCitizenRecord(id: string | undefined) {
+
+export async function deleteSeniorCitizen(id: string): Promise<ActionResult> {
   try {
-    await connectToMongoDB();
-    if (!id) {
-      throw new Error("SeniorCitizenRecord ID is required for updating");
+    await connectToDatabase();
+
+    const deletedSeniorCitizen = await SeniorCitizenModel.findByIdAndDelete(id);
+
+    if (!deletedSeniorCitizen) {
+      return { success: false, message: "Senior Citizen not found" };
     }
 
-    const deleteRecord = await SeniorCitizenModel.findByIdAndDelete(id, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (deleteRecord) {
-      return {
-        success: true,
-        message: "Record deleted successfully",
-      };
-    } else {
-      return {
-        success: false,
-        message: "Record not found or delete failed",
-      };
-    }
+    return { success: true, message: "Senior Citizen deleted successfully" };
   } catch (error) {
-    return {
-      success: false,
-      message: "Error deleting Senior Citizen Record",
-      error: (error as Error).message || "Unknown error",
-    };
+    console.error("Error in deleteSeniorCitizen:", error);
+    return { success: false, message: "Failed to delete Senior Citizen" };
   }
 }

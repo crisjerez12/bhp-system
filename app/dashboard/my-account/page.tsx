@@ -32,42 +32,39 @@ import {
   deleteUser,
   editCredentials,
   updateUsers,
+  getCurrentUser,
 } from "@/app/actions/my-account-actions";
-
-interface UserData {
-  firstName: string;
-  lastName: string;
-  username: string;
-  password: string;
-}
-
-export interface User extends Omit<UserData, "password"> {
-  _id: string;
-  role: string;
-}
+import { IUser } from "@/lib/models/user";
 
 export default function Component() {
   const [page, setPage] = useState("myAccount");
   const [editing, setEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [userData, setUserData] = useState<UserData>({
-    firstName: "Juan",
-    lastName: "Dela Cruz",
-    username: "juandelacruz",
-    password: "password123",
-  });
-  const [newStaffData, setNewStaffData] = useState<UserData>({
+  const [userData, setUserData] = useState<IUser | undefined>();
+  const [newStaffData, setNewStaffData] = useState<IUser>({
     firstName: "",
     lastName: "",
     username: "",
     password: "",
+    role: "staff",
   });
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<IUser[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [updatedUserData, setUpdatedUserData] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
+  const [updatedUserData, setUpdatedUserData] = useState<IUser | null>(null);
 
   useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          setUserData(user);
+        }
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+      }
+    };
+
     const fetchUsers = async () => {
       try {
         const response = await fetch("/api/users");
@@ -84,24 +81,24 @@ export default function Component() {
       }
     };
 
+    fetchCurrentUser();
     fetchUsers();
   }, []);
 
   const handleEdit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (editing) {
+    if (editing && userData) {
       const formData = new FormData(e.currentTarget);
-      const updatedUserData: UserData = {
-        firstName: formData.get("firstName") as string,
-        lastName: formData.get("lastName") as string,
-        username: formData.get("username") as string,
-        password: formData.get("password") as string,
-      };
       try {
-        await editCredentials(formData);
-        setUserData(updatedUserData);
+        const result = await editCredentials(formData);
+        if (result.success) {
+          const updatedUser = await getCurrentUser();
+          if (updatedUser) {
+            setUserData(updatedUser);
+          }
+        }
       } catch (error) {
-        console.error("Failed to update credentials:", error);
+        console.error("Error updating credentials:", error);
       }
     }
     setEditing(!editing);
@@ -110,29 +107,41 @@ export default function Component() {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setUserData((prevData) => ({ ...prevData, [name]: value }));
+    setUserData((prevData) =>
+      prevData ? { ...prevData, [name]: value } : undefined
+    );
   };
 
   const handleAddStaff = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    await addStaff(formData);
-
-    setNewStaffData({
-      firstName: "",
-      lastName: "",
-      username: "",
-      password: "",
-    });
+    const res = await addStaff(formData);
+    if (res.success) {
+      console.log(res.message);
+      setNewStaffData({
+        firstName: "",
+        lastName: "",
+        username: "",
+        password: "",
+        role: "staff",
+      });
+    } else {
+      console.log(res.message);
+    }
   };
 
-  const handleUpdateUser = async (id: string) => {
+  const handleUpdateUser = async (id: string | undefined) => {
     if (updatedUserData) {
-      await updateUsers(id, updatedUserData);
-      setUsers(
-        users.map((u) => (u._id === id ? { ...u, ...updatedUserData } : u))
-      );
+      const result = await updateUsers(id, updatedUserData);
+      if (result.success) {
+        setUsers(
+          users.map((u) => (u._id === id ? { ...u, ...updatedUserData } : u))
+        );
+        console.log(result.message);
+      } else {
+        console.log(result.message);
+      }
       setDialogOpen(false);
       setSelectedUser(null);
       setUpdatedUserData(null);
@@ -140,11 +149,14 @@ export default function Component() {
   };
 
   const handleDeleteUser = async (id: string) => {
-    await deleteUser(id);
+    const result = await deleteUser(id);
     setUsers(users.filter((user) => user._id !== id));
+    console.log(result?.message);
   };
 
-  const handleUpdateInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleUpdateInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setUpdatedUserData((prev) => (prev ? { ...prev, [name]: value } : null));
   };
@@ -162,7 +174,7 @@ export default function Component() {
         </SelectContent>
       </Select>
 
-      {page === "myAccount" && (
+      {page === "myAccount" && userData && (
         <form onSubmit={handleEdit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -203,7 +215,6 @@ export default function Component() {
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    value={userData.password}
                     onChange={handleInputChange}
                     className="pr-10"
                   />
@@ -288,6 +299,27 @@ export default function Component() {
                   }))
                 }
               />
+            </div>
+            <div>
+              <Label htmlFor="newRole">Role</Label>
+              <Select
+                name="role"
+                value={newStaffData.role}
+                onValueChange={(value) =>
+                  setNewStaffData((prev) => ({
+                    ...prev,
+                    role: value as "admin" | "staff",
+                  }))
+                }
+              >
+                <SelectTrigger id="newRole">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
@@ -395,6 +427,31 @@ export default function Component() {
                               className="col-span-3"
                             />
                           </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="updateRole" className="text-right">
+                              Role
+                            </Label>
+                            <Select
+                              name="role"
+                              value={updatedUserData?.role}
+                              onValueChange={(value) =>
+                                handleUpdateInputChange({
+                                  target: { name: "role", value },
+                                } as ChangeEvent<HTMLSelectElement>)
+                              }
+                            >
+                              <SelectTrigger
+                                id="updateRole"
+                                className="col-span-3"
+                              >
+                                <SelectValue placeholder="Select role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="staff">Staff</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       )}
                       <Button
@@ -408,7 +465,7 @@ export default function Component() {
                     </DialogContent>
                   </Dialog>
                   <Button
-                    onClick={() => handleDeleteUser(user._id)}
+                    onClick={() => user._id && handleDeleteUser(user._id)}
                     variant="destructive"
                   >
                     Delete

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import { submitFamilyPlanningInfo } from "@/app/actions/family-planning-response";
 import SubmitButton from "@/components/SubmitButton";
 import {
@@ -11,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CONTROL_TYPE, fetchUsersData, PUROKS } from "@/lib/constants";
-
 export default function FamilyPlanning() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [key, setKey] = useState(+new Date());
@@ -29,11 +29,14 @@ export default function FamilyPlanning() {
     setIsSubmitting(true);
     try {
       const res = await submitFamilyPlanningInfo(formData);
-      if (!res.success) {
-        throw new Error("Submission Failed");
+      if (res.error) {
+        toast.error(res.error);
+      } else if (res.success) {
+        toast.success(res.message);
+        setKey(+new Date());
       }
-      setKey(+new Date());
     } catch (error) {
+      toast.error("An unexpected error occurred");
       console.error("Form submission failed:", error);
     } finally {
       setIsSubmitting(false);

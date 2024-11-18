@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { fetchUsersData, PUROKS } from "@/lib/constants";
 import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 
 export default function MothersForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,12 +30,22 @@ export default function MothersForm() {
     setIsSubmitting(true);
     try {
       const res = await submitMotherInfo(formData);
-      if (!res?.success) {
-        throw new Error("Submission Failed");
+      if (res.success) {
+        toast.success(res.message);
+        setKey(+new Date()); // Reset the form
+      } else {
+        if (res.errors) {
+          // Handle Zod validation errors
+          res.errors.forEach((error: { message: string }) =>
+            toast.error(error.message)
+          );
+        } else {
+          toast.error(res.message || "Submission Failed");
+        }
       }
-      setKey(+new Date());
     } catch (error) {
       console.error("Form submission failed:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }

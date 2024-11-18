@@ -1,3 +1,4 @@
+// file: app/page.tsx
 "use client";
 
 import { useState, FormEvent, useEffect } from "react";
@@ -35,6 +36,7 @@ import {
   WITH_TOILET,
 } from "@/lib/constants";
 import { Member, HouseholdType } from "@/lib/models/households";
+import { toast } from "react-toastify";
 
 export default function HouseholdFormComponent() {
   const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
@@ -60,13 +62,26 @@ export default function HouseholdFormComponent() {
     };
     loadStaffData();
   }, []);
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (addMemberDialogOpen || editDialogOpen) return;
     setIsSubmitting(true);
-    const res = await createHousehold(formData);
+
+    const formDataObj = new FormData(e.currentTarget);
+    const data: Partial<HouseholdType> = Object.fromEntries(
+      formDataObj.entries()
+    );
+
+    // Convert members array from FormData
+    const membersData = formDataObj
+      .getAll("members[]")
+      .map((member) => JSON.parse(member as string));
+    data.members = membersData;
+
+    const res = await createHousehold(data as HouseholdType);
+
     if (res?.success) {
+      toast.success(res.message);
       setFormData({
         householdName: "",
         householdType: "",
@@ -78,6 +93,7 @@ export default function HouseholdFormComponent() {
       });
       setKey(+new Date());
     } else {
+      toast.error(res?.error || "Error creating household");
       console.error("Error submitting form:", res?.error);
     }
     setIsSubmitting(false);
@@ -132,6 +148,7 @@ export default function HouseholdFormComponent() {
             </Label>
             <input
               id="householdName"
+              name="householdName"
               type="text"
               value={formData.householdName}
               onChange={(e) =>
@@ -149,6 +166,7 @@ export default function HouseholdFormComponent() {
               Household Type
             </Label>
             <Select
+              name="householdType"
               onValueChange={(value) =>
                 handleInputChange("householdType", value)
               }
@@ -247,6 +265,7 @@ export default function HouseholdFormComponent() {
               NHTS Status
             </Label>
             <Select
+              name="nhtsStatus"
               onValueChange={(value) => handleInputChange("nhtsStatus", value)}
             >
               <SelectTrigger
@@ -272,6 +291,7 @@ export default function HouseholdFormComponent() {
               Toilet
             </Label>
             <Select
+              name="toilet"
               onValueChange={(value) => handleInputChange("toilet", value)}
             >
               <SelectTrigger
@@ -300,6 +320,7 @@ export default function HouseholdFormComponent() {
               Assigned Staff
             </Label>
             <Select
+              name="assignedStaff"
               onValueChange={(value) =>
                 handleInputChange("assignedStaff", value)
               }
@@ -327,6 +348,7 @@ export default function HouseholdFormComponent() {
               Address
             </Label>
             <Select
+              name="address"
               onValueChange={(value) => handleInputChange("address", value)}
             >
               <SelectTrigger
@@ -443,6 +465,7 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
         <input
           type="text"
           id="firstName"
+          name="firstName"
           value={member.firstName}
           onChange={(e) => handleInputChange("firstName", e.target.value)}
           required
@@ -454,6 +477,7 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
         <input
           type="text"
           id="lastName"
+          name="lastName"
           value={member.lastName}
           onChange={(e) => handleInputChange("lastName", e.target.value)}
           required
@@ -465,6 +489,7 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
         <input
           type="date"
           id="birthdate"
+          name="birthdate"
           value={member.birthdate}
           onChange={(e) => handleInputChange("birthdate", e.target.value)}
           required
@@ -495,6 +520,7 @@ function MemberForm({ onSubmit, onCancel, initialData }: MemberFormProps) {
         <input
           type="text"
           id="occupation"
+          name="occupation"
           value={member.occupation}
           onChange={(e) => handleInputChange("occupation", e.target.value)}
           required

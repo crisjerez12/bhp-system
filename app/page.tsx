@@ -14,12 +14,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { Login } from "./actions/auth";
+import { toast } from "react-toastify";
 
 export default function LoginPageComponent() {
   const [showTerms, setShowTerms] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleTermsClick = (e: React.MouseEvent) => {
@@ -38,28 +40,21 @@ export default function LoginPageComponent() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsLoading(true);
     const formData = new FormData(event.currentTarget);
-    const username = formData.get("username") as string;
-    const password = formData.get("password") as string;
 
     try {
-      const response = await fetch("/api/users/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
+      const res = await Login(formData);
+      if (res?.success) {
+        toast.success("Login successful!");
         router.push("/dashboard");
       } else {
-        setError(data.message);
+        toast.error(res.message || "An error occurred. Please try again.");
       }
     } catch (error) {
-      setError("An error occurred. Please try again.");
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -138,14 +133,12 @@ export default function LoginPageComponent() {
                 </label>
               </div>
 
-              {error && <p className="text-red-500">{error}</p>}
-
               <Button
                 type="submit"
                 className="w-full bg-sky-500 text-lg font-semibold hover:bg-sky-600"
-                disabled={!agreed}
+                disabled={!agreed || isLoading}
               >
-                Sign In
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
           </div>
@@ -158,35 +151,7 @@ export default function LoginPageComponent() {
             <DialogTitle>Terms and Conditions</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 text-sm">
-            <p>
-              Welcome to Barangay Health Profiling. Before you proceed, please
-              read and agree to our terms and conditions:
-            </p>
-
-            <h3 className="font-semibold">1. Account Usage</h3>
-            <p>
-              You are responsible for maintaining the confidentiality of your
-              account credentials and for all activities under your account.
-            </p>
-
-            <h3 className="font-semibold">2. Privacy</h3>
-            <p>
-              We collect and process your personal information in accordance
-              with our Privacy Policy. By using this service, you consent to
-              such processing.
-            </p>
-
-            <h3 className="font-semibold">3. Data Security</h3>
-            <p>
-              We implement appropriate technical and organizational measures to
-              protect your personal health information.
-            </p>
-
-            <h3 className="font-semibold">4. User Obligations</h3>
-            <p>
-              You agree to provide accurate and complete information and to
-              update such information to keep it accurate and current.
-            </p>
+            {/* Terms and conditions content */}
           </div>
           <DialogFooter>
             <Button

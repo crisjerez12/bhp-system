@@ -1,9 +1,12 @@
+// file: app/actions/household-response.ts
 "use server";
 
 import connectToMongoDB from "@/lib/connection";
 import HouseholdModel, { HouseholdType } from "@/lib/models/households";
+
 export async function createHousehold(data: HouseholdType) {
   try {
+    console.log(data);
     await connectToMongoDB();
     const household = new HouseholdModel(data);
     const res = await household.save();
@@ -62,17 +65,15 @@ export async function updateHousehold(data: HouseholdType) {
     };
   }
 }
+
 export async function deleteHousehold(id: string | undefined) {
   try {
     await connectToMongoDB();
     if (!id) {
-      throw new Error("Household ID is required for updating");
+      throw new Error("Household ID is required for deleting");
     }
 
-    const deleteRecord = await HouseholdModel.findByIdAndDelete(id, {
-      new: true,
-      runValidators: true,
-    });
+    const deleteRecord = await HouseholdModel.findByIdAndDelete(id);
 
     if (deleteRecord) {
       return {
