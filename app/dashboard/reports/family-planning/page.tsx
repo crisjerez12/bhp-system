@@ -62,7 +62,9 @@ export default function FamilyPlanningReports() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/family-planning");
+      const response = await fetch("/api/family-planning", {
+        next: { revalidate: 0 },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }

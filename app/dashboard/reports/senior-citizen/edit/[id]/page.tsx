@@ -13,9 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X } from "lucide-react";
-import { updateSeniorCitizenRecord } from "@/app/actions/senior-response";
 import { fetchUsersData, PUROKS } from "@/lib/constants";
 import SubmitButton from "@/components/SubmitButton";
+import { updateSeniorCitizen } from "@/app/actions/senior-response";
 
 export default function SeniorCitizenForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,7 +103,7 @@ export default function SeniorCitizenForm() {
 
     try {
       if (id) submitData.append("_id", id as string);
-      const res = await updateSeniorCitizenRecord(submitData);
+      const res = await updateSeniorCitizen(submitData);
       if (!res.success) {
         throw new Error("Failed to update");
       }

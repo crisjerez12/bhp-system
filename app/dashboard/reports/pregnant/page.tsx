@@ -60,7 +60,9 @@ export default function PregnantWomenReports() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/pregnant");
+      const response = await fetch("/api/pregnant", {
+        next: { revalidate: 0 },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }

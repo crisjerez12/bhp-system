@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     await connectToMongoDB();
-    const familyPlanning = await FamilyPlanningModel.find().exec();
+    const familyPlanning = await FamilyPlanningModel.find();
     if (!familyPlanning) {
       return NextResponse.json(
         { success: false, message: "No record found" },

@@ -54,7 +54,9 @@ export default function HouseholdReportComponent() {
   const fetchHouseholds = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/household");
+      const response = await fetch("/api/household", {
+        next: { revalidate: 0 },
+      });
       const data = await response.json();
       setHouseholds(data.data);
     } catch (error) {

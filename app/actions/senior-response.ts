@@ -33,21 +33,32 @@ type ActionResult = {
   errors?: Record<string, string[]>;
 };
 
+type SeniorCitizenFormData = z.infer<typeof SeniorCitizenSchema>;
+
+function parseFormData(formData: FormData): Partial<SeniorCitizenFormData> {
+  const rawData: Partial<SeniorCitizenFormData> = {};
+  formData.forEach((value, key) => {
+    if (key === "medicines[]") {
+      rawData.medicines = formData.getAll("medicines[]") as string[];
+    } else if (key in SeniorCitizenSchema.shape) {
+      (rawData as Record<string, string | number>)[key] =
+        key === "weight" || key === "systolic" || key === "diastolic"
+          ? Number(value)
+          : value.toString();
+    } else {
+      console.warn(`Unexpected form key: ${key}`);
+    }
+  });
+  return rawData;
+}
+
 export async function createSeniorCitizen(
   formData: FormData
 ): Promise<ActionResult> {
   try {
     await connectToDatabase();
 
-    const rawData: Record<string, any> = {};
-    formData.forEach((value, key) => {
-      if (key === "medicines[]") {
-        rawData.medicines = formData.getAll("medicines[]");
-      } else {
-        rawData[key] = formData.get(key);
-      }
-    });
-
+    const rawData = parseFormData(formData);
     const validationResult = SeniorCitizenSchema.safeParse(rawData);
 
     if (!validationResult.success) {
@@ -89,23 +100,19 @@ export async function createSeniorCitizen(
     return { success: false, message: "Failed to create Senior Citizen" };
   }
 }
+
 export async function updateSeniorCitizen(
   formData: FormData
 ): Promise<ActionResult> {
   try {
     await connectToDatabase();
 
-    const rawData: Record<string, any> = {};
-    formData.forEach((value, key) => {
-      if (key === "medicines[]") {
-        rawData.medicines = formData.getAll("medicines[]");
-      } else {
-        rawData[key] = formData.get(key);
-      }
-    });
+    const rawData = parseFormData(formData);
+    const id = formData.get("_id");
 
-    const id = rawData._id;
-    delete rawData._id;
+    if (!id || typeof id !== "string") {
+      return { success: false, message: "Senior Citizen ID is required" };
+    }
 
     const validationResult = SeniorCitizenSchema.safeParse(rawData);
 
@@ -143,9 +150,15 @@ export async function updateSeniorCitizen(
   }
 }
 
-export async function deleteSeniorCitizen(id: string): Promise<ActionResult> {
+export async function deleteSeniorCitizen(
+  id: string | undefined
+): Promise<ActionResult> {
   try {
     await connectToDatabase();
+
+    if (!id) {
+      return { success: false, message: "Senior Citizen ID is required" };
+    }
 
     const deletedSeniorCitizen = await SeniorCitizenModel.findByIdAndDelete(id);
 

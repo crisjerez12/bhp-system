@@ -26,7 +26,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Eye, EyeOff } from "lucide-react";
 import {
   addStaff,
   deleteUser,
@@ -39,7 +38,6 @@ import { IUser } from "@/lib/models/user";
 export default function Component() {
   const [page, setPage] = useState("myAccount");
   const [editing, setEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [userData, setUserData] = useState<IUser | undefined>();
   const [newStaffData, setNewStaffData] = useState<IUser>({
     firstName: "",
@@ -52,6 +50,7 @@ export default function Component() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
   const [updatedUserData, setUpdatedUserData] = useState<IUser | null>(null);
+  const [userRole, setUserRole] = useState<string>("staff");
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -59,6 +58,7 @@ export default function Component() {
         const user = await getCurrentUser();
         if (user) {
           setUserData(user);
+          setUserRole(user.role);
         }
       } catch (error) {
         console.error("Error fetching current user:", error);
@@ -102,7 +102,6 @@ export default function Component() {
       }
     }
     setEditing(!editing);
-    setShowPassword(false);
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -163,318 +162,371 @@ export default function Component() {
 
   return (
     <div className="p-4">
-      <Select onValueChange={(value) => setPage(value)}>
-        <SelectTrigger className="w-full md:w-[200px] mb-4">
-          <SelectValue placeholder="My Account" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="myAccount">My Account</SelectItem>
-          <SelectItem value="addStaff">Add Staff</SelectItem>
-          <SelectItem value="manageUsers">Manage Users</SelectItem>
-        </SelectContent>
-      </Select>
+      {userRole === "admin" ? (
+        <Select onValueChange={(value) => setPage(value)}>
+          <SelectTrigger className="w-full md:w-[200px] mb-4">
+            <SelectValue placeholder="My Account" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="myAccount">My Account</SelectItem>
+            <SelectItem value="addStaff">Add Staff</SelectItem>
+            <SelectItem value="manageUsers">Manage Users</SelectItem>
+          </SelectContent>
+        </Select>
+      ) : (
+        <h2 className="text-2xl font-bold mb-4">My Account</h2>
+      )}
 
-      {page === "myAccount" && userData && (
-        <form onSubmit={handleEdit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
-                name="firstName"
-                value={userData.firstName}
-                onChange={handleInputChange}
-                disabled={!editing}
-              />
-            </div>
-            <div>
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                name="lastName"
-                value={userData.lastName}
-                onChange={handleInputChange}
-                disabled={!editing}
-              />
-            </div>
-            <div>
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                value={userData.username}
-                onChange={handleInputChange}
-                disabled={!editing}
-              />
-            </div>
-            {editing && (
-              <div>
-                <Label htmlFor="password">New Password</Label>
-                <div className="relative">
+      {userRole === "admin" ? (
+        <>
+          {page === "myAccount" && userData && (
+            <form onSubmit={handleEdit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">First Name</Label>
                   <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
+                    id="firstName"
+                    name="firstName"
+                    value={userData.firstName}
                     onChange={handleInputChange}
-                    className="pr-10"
+                    disabled={!editing}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                    tabIndex={-1}
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    value={userData.lastName}
+                    onChange={handleInputChange}
+                    disabled={!editing}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    name="username"
+                    value={userData.username}
+                    onChange={handleInputChange}
+                    disabled={!editing}
+                  />
+                </div>
+                {editing && (
+                  <div>
+                    <Label htmlFor="password">New Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        required
+                        onChange={handleInputChange}
+                        className="pr-10"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                {editing ? "Save" : "Edit Credentials"}
+              </Button>
+            </form>
+          )}
+
+          {page === "addStaff" && (
+            <form onSubmit={handleAddStaff} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="newFirstName">First Name</Label>
+                  <Input
+                    id="newFirstName"
+                    name="firstName"
+                    value={newStaffData.firstName}
+                    onChange={(e) =>
+                      setNewStaffData((prev) => ({
+                        ...prev,
+                        firstName: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="newLastName">Last Name</Label>
+                  <Input
+                    id="newLastName"
+                    name="lastName"
+                    value={newStaffData.lastName}
+                    onChange={(e) =>
+                      setNewStaffData((prev) => ({
+                        ...prev,
+                        lastName: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="newUsername">Username</Label>
+                  <Input
+                    id="newUsername"
+                    name="username"
+                    value={newStaffData.username}
+                    onChange={(e) =>
+                      setNewStaffData((prev) => ({
+                        ...prev,
+                        username: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="newPassword">Password</Label>
+                  <Input
+                    id="newPassword"
+                    name="password"
+                    type="text"
+                    value={newStaffData.password}
+                    onChange={(e) =>
+                      setNewStaffData((prev) => ({
+                        ...prev,
+                        password: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="newRole">Role</Label>
+                  <Select
+                    name="role"
+                    value={newStaffData.role}
+                    onValueChange={(value) =>
+                      setNewStaffData((prev) => ({
+                        ...prev,
+                        role: value as "admin" | "staff",
+                      }))
+                    }
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+                    <SelectTrigger id="newRole">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            )}
-          </div>
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-            {editing ? "Save" : "Edit Credentials"}
-          </Button>
-        </form>
-      )}
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                Create
+              </Button>
+            </form>
+          )}
 
-      {page === "addStaff" && (
-        <form onSubmit={handleAddStaff} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="newFirstName">First Name</Label>
-              <Input
-                id="newFirstName"
-                name="firstName"
-                value={newStaffData.firstName}
-                onChange={(e) =>
-                  setNewStaffData((prev) => ({
-                    ...prev,
-                    firstName: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="newLastName">Last Name</Label>
-              <Input
-                id="newLastName"
-                name="lastName"
-                value={newStaffData.lastName}
-                onChange={(e) =>
-                  setNewStaffData((prev) => ({
-                    ...prev,
-                    lastName: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="newUsername">Username</Label>
-              <Input
-                id="newUsername"
-                name="username"
-                value={newStaffData.username}
-                onChange={(e) =>
-                  setNewStaffData((prev) => ({
-                    ...prev,
-                    username: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="newPassword">Password</Label>
-              <Input
-                id="newPassword"
-                name="password"
-                type="password"
-                value={newStaffData.password}
-                onChange={(e) =>
-                  setNewStaffData((prev) => ({
-                    ...prev,
-                    password: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="newRole">Role</Label>
-              <Select
-                name="role"
-                value={newStaffData.role}
-                onValueChange={(value) =>
-                  setNewStaffData((prev) => ({
-                    ...prev,
-                    role: value as "admin" | "staff",
-                  }))
-                }
-              >
-                <SelectTrigger id="newRole">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-            Create
-          </Button>
-        </form>
-      )}
-
-      {page === "manageUsers" && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>First Name</TableHead>
-              <TableHead>Last Name</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user._id}>
-                <TableCell>{user.firstName}</TableCell>
-                <TableCell>{user.lastName}</TableCell>
-                <TableCell>{user.username}</TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell>
-                  <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                    <DialogTrigger asChild>
+          {page === "manageUsers" && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>First Name</TableHead>
+                  <TableHead>Last Name</TableHead>
+                  <TableHead>Username</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user._id}>
+                    <TableCell>{user.firstName}</TableCell>
+                    <TableCell>{user.lastName}</TableCell>
+                    <TableCell>{user.username}</TableCell>
+                    <TableCell>{user.role}</TableCell>
+                    <TableCell>
+                      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="mr-2"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setUpdatedUserData(user);
+                            }}
+                          >
+                            Update
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-white">
+                          <DialogHeader>
+                            <DialogTitle>Update User</DialogTitle>
+                          </DialogHeader>
+                          {selectedUser && (
+                            <div className="grid gap-4 py-4">
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label
+                                  htmlFor="updateFirstName"
+                                  className="text-right"
+                                >
+                                  First Name
+                                </Label>
+                                <Input
+                                  id="updateFirstName"
+                                  name="firstName"
+                                  value={updatedUserData?.firstName || ""}
+                                  onChange={handleUpdateInputChange}
+                                  className="col-span-3"
+                                />
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label
+                                  htmlFor="updateLastName"
+                                  className="text-right"
+                                >
+                                  Last Name
+                                </Label>
+                                <Input
+                                  id="updateLastName"
+                                  name="lastName"
+                                  value={updatedUserData?.lastName || ""}
+                                  onChange={handleUpdateInputChange}
+                                  className="col-span-3"
+                                />
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label
+                                  htmlFor="updateUsername"
+                                  className="text-right"
+                                >
+                                  Username
+                                </Label>
+                                <Input
+                                  id="updateUsername"
+                                  name="username"
+                                  value={updatedUserData?.username || ""}
+                                  onChange={handleUpdateInputChange}
+                                  className="col-span-3"
+                                />
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label
+                                  htmlFor="updatePassword"
+                                  className="text-right"
+                                >
+                                  New Password
+                                </Label>
+                                <Input
+                                  id="updatePassword"
+                                  name="password"
+                                  type="password"
+                                  placeholder="Enter new password"
+                                  onChange={handleUpdateInputChange}
+                                  className="col-span-3"
+                                />
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label
+                                  htmlFor="updateRole"
+                                  className="text-right"
+                                >
+                                  Role
+                                </Label>
+                                <Select
+                                  name="role"
+                                  value={updatedUserData?.role}
+                                  onValueChange={(value) =>
+                                    handleUpdateInputChange({
+                                      target: { name: "role", value },
+                                    } as ChangeEvent<HTMLSelectElement>)
+                                  }
+                                >
+                                  <SelectTrigger
+                                    id="updateRole"
+                                    className="col-span-3"
+                                  >
+                                    <SelectValue placeholder="Select role" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="staff">Staff</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
+                          <Button
+                            onClick={() =>
+                              selectedUser && handleUpdateUser(selectedUser._id)
+                            }
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Update
+                          </Button>
+                        </DialogContent>
+                      </Dialog>
                       <Button
-                        variant="outline"
-                        className="mr-2"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setUpdatedUserData(user);
-                        }}
+                        onClick={() => user._id && handleDeleteUser(user._id)}
+                        variant="destructive"
                       >
-                        Update
+                        Delete
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-white">
-                      <DialogHeader>
-                        <DialogTitle>Update User</DialogTitle>
-                      </DialogHeader>
-                      {selectedUser && (
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label
-                              htmlFor="updateFirstName"
-                              className="text-right"
-                            >
-                              First Name
-                            </Label>
-                            <Input
-                              id="updateFirstName"
-                              name="firstName"
-                              value={updatedUserData?.firstName || ""}
-                              onChange={handleUpdateInputChange}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label
-                              htmlFor="updateLastName"
-                              className="text-right"
-                            >
-                              Last Name
-                            </Label>
-                            <Input
-                              id="updateLastName"
-                              name="lastName"
-                              value={updatedUserData?.lastName || ""}
-                              onChange={handleUpdateInputChange}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label
-                              htmlFor="updateUsername"
-                              className="text-right"
-                            >
-                              Username
-                            </Label>
-                            <Input
-                              id="updateUsername"
-                              name="username"
-                              value={updatedUserData?.username || ""}
-                              onChange={handleUpdateInputChange}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label
-                              htmlFor="updatePassword"
-                              className="text-right"
-                            >
-                              New Password
-                            </Label>
-                            <Input
-                              id="updatePassword"
-                              name="password"
-                              type="password"
-                              placeholder="Enter new password"
-                              onChange={handleUpdateInputChange}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="updateRole" className="text-right">
-                              Role
-                            </Label>
-                            <Select
-                              name="role"
-                              value={updatedUserData?.role}
-                              onValueChange={(value) =>
-                                handleUpdateInputChange({
-                                  target: { name: "role", value },
-                                } as ChangeEvent<HTMLSelectElement>)
-                              }
-                            >
-                              <SelectTrigger
-                                id="updateRole"
-                                className="col-span-3"
-                              >
-                                <SelectValue placeholder="Select role" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="staff">Staff</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      )}
-                      <Button
-                        onClick={() =>
-                          selectedUser && handleUpdateUser(selectedUser._id)
-                        }
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        Update
-                      </Button>
-                    </DialogContent>
-                  </Dialog>
-                  <Button
-                    onClick={() => user._id && handleDeleteUser(user._id)}
-                    variant="destructive"
-                  >
-                    Delete
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </>
+      ) : (
+        userData && (
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  value={userData.firstName}
+                  onChange={handleInputChange}
+                  disabled={!editing}
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  value={userData.lastName}
+                  onChange={handleInputChange}
+                  disabled={!editing}
+                />
+              </div>
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  name="username"
+                  value={userData.username}
+                  onChange={handleInputChange}
+                  disabled={!editing}
+                />
+              </div>
+              {editing && (
+                <div>
+                  <Label htmlFor="password">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      name="password"
+                      required
+                      onChange={handleInputChange}
+                      className="pr-10"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+              {editing ? "Save" : "Edit Credentials"}
+            </Button>
+          </form>
+        )
       )}
     </div>
   );

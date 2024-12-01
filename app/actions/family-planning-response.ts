@@ -6,6 +6,7 @@ import { calculateAge, capitalizeName } from "@/lib/Functions";
 import FamilyPlanningModel, {
   IFamilyPlanning,
 } from "@/lib/models/family-planning";
+import { revalidatePath } from "next/cache";
 
 const FamilyPlanningSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -47,6 +48,8 @@ export async function submitFamilyPlanningInfo(formData: FormData) {
 
     const data = new FamilyPlanningModel(familyPlanningData);
     await data.save();
+    revalidatePath("/dashboard");
+
     return { success: true, message: "Form submitted successfully" };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -105,6 +108,7 @@ export async function updateFamilyPlanningInfo(formData: FormData) {
     if (!toSave) {
       return { error: "Failed to Update the Record" };
     }
+    revalidatePath("/dashboard");
 
     return { success: true, message: "Record Updated Successfully" };
   } catch (error) {
@@ -130,6 +134,7 @@ export async function deleteFamilyPlanningRecord(id: string | undefined) {
     if (!deleteRecord) {
       return { error: "Record not found or delete failed" };
     }
+    revalidatePath("/dashboard");
 
     return { success: true, message: "Record deleted successfully" };
   } catch (error) {

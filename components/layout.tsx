@@ -15,13 +15,33 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getCurrentUser } from "@/app/actions/my-account-actions";
+import { logout } from "@/app/actions/auth";
+import { toast } from "react-toastify";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [username, setUsername] = useState("ADMIN");
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const menuItems = [
+  const staffMenuItems = [
+    { name: "Household", icon: Users, path: "/dashboard/household" },
+    {
+      name: "Family Planning",
+      icon: Heart,
+      path: "/dashboard/family-planning",
+    },
+    { name: "Pregnant", icon: BadgePlus, path: "/dashboard/pregnant" },
+    {
+      name: "Senior Citizen",
+      icon: UserPlus,
+      path: "/dashboard/senior-citizen",
+    },
+    { name: "My Account", icon: User, path: "/dashboard/my-account" },
+  ];
+
+  const adminMenuItems = [
     { name: "Dashboard", icon: Home, path: "/dashboard" },
     { name: "Household", icon: Users, path: "/dashboard/household" },
     {
@@ -29,11 +49,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       icon: Heart,
       path: "/dashboard/family-planning",
     },
-    {
-      name: "Pregnant",
-      icon: BadgePlus,
-      path: "/dashboard/pregnant",
-    },
+    { name: "Pregnant", icon: BadgePlus, path: "/dashboard/pregnant" },
     {
       name: "Senior Citizen",
       icon: UserPlus,
@@ -42,8 +58,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "Reports", icon: FileText, path: "/dashboard/reports" },
     { name: "My Account", icon: User, path: "/dashboard/my-account" },
   ];
+
+  const menuItems = username === "Staff" ? staffMenuItems : adminMenuItems;
+
   const currentPage =
-    menuItems.find((item) => item.path === pathname)?.name || "Dashboard";
+    menuItems.find((item) => item.path === pathname)?.name || "My Account";
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -61,7 +80,32 @@ export function Layout({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        setUsername(user.role === "staff" ? "Staff" : "Admin");
+      }
+    };
+    fetchUser();
+  }, []);
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+  const handleLogout = () => {
+    toast
+      .promise(logout(), {
+        pending: "Logging out...",
+        success: "Logged out successfully",
+        error: "Failed to logout",
+      })
+      .then(() => {
+        window.location.href = "/";
+      })
+      .catch((error) => {
+        console.error("Logout error:", error);
+      });
+  };
 
   return (
     <div className="flex h-screen ">
@@ -122,13 +166,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </h2>
             </div>
             <div className="flex items-center">
-              <span className="mr-4">ADMIN</span>
-              <Link href="/">
-                <button className="bg-[#1e1e2d] text-white px-3 py-1 rounded flex items-center">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </button>
-              </Link>
+              <span className="mr-4">{username.toUpperCase()}</span>
+              <button
+                onClick={handleLogout}
+                className="bg-[#1e1e2d] text-white px-3 py-1 rounded flex items-center"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </button>
             </div>
           </div>
         </header>

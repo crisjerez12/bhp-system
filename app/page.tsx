@@ -14,8 +14,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
-import { Login } from "./actions/auth";
 import { toast } from "react-toastify";
+import { login } from "@/app/actions/auth";
 
 export default function LoginPageComponent() {
   const [showTerms, setShowTerms] = useState(false);
@@ -44,10 +44,15 @@ export default function LoginPageComponent() {
     const formData = new FormData(event.currentTarget);
 
     try {
-      const res = await Login(formData);
+      const res = await login(formData);
       if (res?.success) {
         toast.success("Login successful!");
-        router.push("/dashboard");
+        console.log(res);
+        if (res.role === "staff") {
+          router.push("/dashboard/my-account");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         toast.error(res.message || "An error occurred. Please try again.");
       }
@@ -151,9 +156,69 @@ export default function LoginPageComponent() {
             <DialogTitle>Terms and Conditions</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 text-sm">
-            {/* Terms and conditions content */}
+            <p>
+              Welcome to the Barangay Health Profiling System. By using this
+              system, you agree to the following terms and conditions:
+            </p>
+            <ol className="list-decimal pl-5 space-y-2">
+              <li>
+                The Barangay Health Profiling System is designed to collect,
+                store, and manage health-related information of residents within
+                the barangay.
+              </li>
+              <li>
+                All users must maintain the confidentiality of their login
+                credentials and are responsible for all activities that occur
+                under their account.
+              </li>
+              <li>
+                The health information collected through this system will be
+                used solely for the purpose of improving health services and
+                interventions within the barangay.
+              </li>
+              <li>
+                Users agree to input accurate and up-to-date information to the
+                best of their knowledge.
+              </li>
+              <li>
+                The system administrators will take reasonable measures to
+                protect the privacy and security of the health information
+                stored in the system.
+              </li>
+              <li>
+                Access to the system and its data is restricted to authorized
+                personnel only, such as barangay health workers, medical
+                professionals, and designated government officials.
+              </li>
+              <li>
+                Users are prohibited from sharing, distributing, or using the
+                health information for any purpose other than official barangay
+                health initiatives.
+              </li>
+              <li>
+                The barangay reserves the right to modify, suspend, or terminate
+                access to the system at any time without prior notice.
+              </li>
+              <li>
+                Users acknowledge that the system may undergo periodic updates
+                and maintenance, which may result in temporary unavailability.
+              </li>
+              <li>
+                By using this system, users consent to the collection and use of
+                their health information for the purposes stated above, in
+                compliance with relevant data privacy laws and regulations.
+              </li>
+            </ol>
+            <p>
+              By clicking &apos;I Agree,&apos; you acknowledge that you have
+              read, understood, and agree to abide by these terms and
+              conditions.
+            </p>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex justify-between">
+            <Button onClick={() => setShowTerms(false)} variant="outline">
+              Close
+            </Button>
             <Button
               onClick={handleAgree}
               className="bg-sky-500 hover:bg-sky-600"

@@ -33,7 +33,9 @@ export default function ReportsPageComponent() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await fetch("/api/analytics");
+        const response = await fetch("/api/analytics", {
+          next: { revalidate: 60 },
+        });
         const data = await response.json();
         if (data.success) {
           setAnalyticsData(data.data);

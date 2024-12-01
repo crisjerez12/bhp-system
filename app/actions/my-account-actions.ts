@@ -2,22 +2,27 @@
 
 import connectToMongoDB from "@/lib/connection";
 import UserModel, { IUser } from "@/lib/models/user";
+import { decrypt } from "@/lib/session";
 import bcryptjs from "bcryptjs";
 import { cookies } from "next/headers";
 
 export async function getCurrentUser() {
   try {
     const cookieStore = cookies();
-    const userCookie = cookieStore.get("user");
+    const sessionCookie = cookieStore.get("session")?.value;
 
-    if (!userCookie) {
-      throw new Error("User cookie not found");
+    if (!sessionCookie) {
+      throw new Error("Session cookie not found");
     }
 
-    const userId = JSON.parse(userCookie.value).id;
+    const decrypted = await decrypt(sessionCookie);
+
+    if (!decrypted || !decrypted.userId) {
+      throw new Error("Invalid session");
+    }
 
     await connectToMongoDB();
-    const user = await UserModel.findById(userId).select("-password");
+    const user = await UserModel.findById(decrypted.userId).select("-password");
 
     if (!user) {
       throw new Error("User not found");

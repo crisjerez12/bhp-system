@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { Eye, Edit, Trash2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { deleteSeniorCitizenRecord } from "@/app/actions/senior-response";
 import { ISeniorCitizen } from "@/lib/models/senior-citizen";
 import {
   AlertDialog,
@@ -34,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { fetchUsersData, PUROKS } from "@/lib/constants";
+import { deleteSeniorCitizen } from "@/app/actions/senior-response";
 
 export default function SeniorCitizenReports() {
   const [lastNameSearch, setLastNameSearch] = useState("");
@@ -58,7 +58,9 @@ export default function SeniorCitizenReports() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/senior-citizen");
+      const response = await fetch("/api/senior-citizen", {
+        next: { revalidate: 0 },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -90,7 +92,7 @@ export default function SeniorCitizenReports() {
 
   const handleDelete = async (id: string | undefined) => {
     try {
-      await deleteSeniorCitizenRecord(id);
+      await deleteSeniorCitizen(id);
       await fetchSeniorCitizenData();
     } catch (error) {
       console.error("Error deleting record:", error);
