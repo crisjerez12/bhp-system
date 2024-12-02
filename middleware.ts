@@ -1,7 +1,7 @@
-// import { NextRequest, NextResponse } from "next/server";
-// import { decrypt } from "@/lib/session";
+import { NextRequest, NextResponse } from "next/server";
+import { decrypt } from "@/lib/session";
 
-// const PUBLIC_ROUTES = ["/"];
+const PUBLIC_ROUTES = ["/"];
 // const ADMIN_ROUTES = [
 //   "/dashboard",
 //   "/dashboard/reports",
@@ -19,41 +19,41 @@
 //   "/dashboard/my-account",
 // ];
 
-// export default async function middleware(req: NextRequest) {
-//   const path = req.nextUrl.pathname;
-//   const isPublicRoute = PUBLIC_ROUTES.includes(path);
-//   const isAdminRoute = ADMIN_ROUTES.includes(path);
-//   const isStaffRoute = STAFF_ROUTES.includes(path);
+export default async function middleware(req: NextRequest) {
+  const path = req.nextUrl.pathname;
+  const isPublicRoute = PUBLIC_ROUTES.includes(path);
+  // const isAdminRoute = ADMIN_ROUTES.includes(path);
+  // const isStaffRoute = STAFF_ROUTES.includes(path);
 
-//   const session = await decrypt(req.cookies.get("session")?.value);
+  // const session = await decrypt(req.cookies.get("session")?.value);
 
-//   if (!session) {
-//     if (isAdminRoute || isStaffRoute) {
-//       return NextResponse.redirect(new URL("/", req.url));
-//     }
-//     return NextResponse.next();
-//   }
+  // if (!session) {
+  //   if (isAdminRoute || isStaffRoute) {
+  //     return NextResponse.redirect(new URL("/", req.url));
+  //   }
+  //   return NextResponse.next();
+  // }
 
-//   if (isPublicRoute) {
-//     return NextResponse.redirect(new URL("/dashboard/my-account", req.url));
-//   }
+  if (isPublicRoute) {
+    return NextResponse.redirect(new URL("/dashboard/my-account", req.url));
+  }
 
-//   if (session.role === "staff" && !isStaffRoute) {
-//     return NextResponse.redirect(new URL("/dashboard/my-account", req.url));
-//   }
+  // if (session.role === "staff" && !isStaffRoute) {
+  //   return NextResponse.redirect(new URL("/dashboard/my-account", req.url));
+  // }
 
-//   return NextResponse.next();
-// }
+  return NextResponse.next();
+}
 
-// export const config = {
-//   matcher: [
-//     /*
-//      * Match all request paths except for the ones starting with:
-//      * - api (API routes)
-//      * - _next/static (static files)
-//      * - _next/image (image optimization files)
-//      * - favicon.ico (favicon file)
-//      */
-//     "/((?!api|_next/static|_next/image|favicon.ico).*)",
-//   ],
-// };
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
+};
