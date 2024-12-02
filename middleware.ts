@@ -27,20 +27,20 @@ export default async function middleware(req: NextRequest) {
 
   const session = await decrypt(req.cookies.get("session")?.value);
 
-  if (!session) {
-    if (isAdminRoute || isStaffRoute) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-    return NextResponse.next();
-  }
+  // if (!session) {
+  //   if (isAdminRoute || isStaffRoute) {
+  //     return NextResponse.redirect(new URL("/", req.url));
+  //   }
+  //   return NextResponse.next();
+  // }
 
-  if (isPublicRoute) {
-    return NextResponse.redirect(new URL("/dashboard/my-account", req.url));
-  }
+  // if (isPublicRoute) {
+  //   return NextResponse.redirect(new URL("/dashboard/my-account", req.url));
+  // }
 
-  if (session.role === "staff" && !isStaffRoute) {
-    return NextResponse.redirect(new URL("/dashboard/my-account", req.url));
-  }
+  // if (session.role === "staff" && !isStaffRoute) {
+  //   return NextResponse.redirect(new URL("/dashboard/my-account", req.url));
+  // }
 
   return NextResponse.next();
 }
