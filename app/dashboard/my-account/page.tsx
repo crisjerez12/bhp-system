@@ -67,7 +67,13 @@ export default function Component() {
 
     const fetchUsers = async () => {
       try {
-        const response = await fetch("/api/users");
+        const response = await fetch("/api/users", {
+          cache: 'no-store',
+          headers: {
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          }
+        });
         const result = await response.json();
         if (result.success) {
           setUsers(result.data);

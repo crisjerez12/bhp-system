@@ -1,5 +1,5 @@
 import { Model, Document } from "mongoose";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import connectToMongoDB from "@/lib/connection";
 import HouseholdModel from "@/lib/models/households";
 import PregnantModel from "@/lib/models/pregnant";
@@ -12,22 +12,8 @@ interface MonthlyCountResult {
   count: number;
 }
 
-async function getTotalCount(model: Model<Document>): Promise<number> {
-  return await model.countDocuments();
-}
-
-async function getMonthlyCount(
-  model: Model<Document>
-): Promise<Record<string, number>> {
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5); // Get data for last 6 months
-
-  const result: MonthlyCountResult[] = await model.aggregate([
-    {
-      $match: {
-        createdAt: { $gte: sixMonthsAgo },
-      },
-    },
+async function getMonthlyCount(model: Model<Document>): Promise<MonthlyCountResult[]> {
+  const result = await model.aggregate([
     {
       $group: {
         _id: {
@@ -45,44 +31,17 @@ async function getMonthlyCount(
         count: 1,
       },
     },
-    { $sort: { year: -1, month: -1 } },
+    {
+      $sort: { year: 1, month: 1 },
+    },
   ]);
 
-  const monthlyCount: Record<string, number> = {};
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ] as const;
-
-  const currentDate = new Date();
-  for (let i = 0; i < 6; i++) {
-    const date = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() - i,
-      1
-    );
-    const monthName = months[date.getMonth()];
-    const matchingResult = result.find(
-      (item: MonthlyCountResult) =>
-        item.year === date.getFullYear() && item.month === date.getMonth() + 1
-    );
-    monthlyCount[monthName] = matchingResult ? matchingResult.count : 0;
-  }
-
-  return monthlyCount;
+  return result;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const timestamp = request.nextUrl.searchParams.get('t');
+  
   try {
     await connectToMongoDB();
 
@@ -91,19 +50,13 @@ export async function GET() {
       pregnantsCount,
       seniorCitizensCount,
       familyPlanningsCount,
-      householdsMonthly,
-      pregnantsMonthly,
-      seniorCitizensMonthly,
-      familyPlanningsMonthly,
+      monthlyResponse,
     ] = await Promise.all([
-      getTotalCount(HouseholdModel),
-      getTotalCount(PregnantModel),
-      getTotalCount(SeniorCitizen),
-      getTotalCount(FamilyPlanning),
+      HouseholdModel.countDocuments(),
+      PregnantModel.countDocuments(),
+      SeniorCitizen.countDocuments(),
+      FamilyPlanning.countDocuments(),
       getMonthlyCount(HouseholdModel),
-      getMonthlyCount(PregnantModel),
-      getMonthlyCount(SeniorCitizen),
-      getMonthlyCount(FamilyPlanning),
     ]);
 
     const totalProfiles =
@@ -111,15 +64,6 @@ export async function GET() {
       pregnantsCount +
       seniorCitizensCount +
       familyPlanningsCount;
-
-    const monthlyResponse: Record<string, number> = {};
-    Object.keys(householdsMonthly).forEach((month) => {
-      monthlyResponse[month] =
-        (householdsMonthly[month] || 0) +
-        (pregnantsMonthly[month] || 0) +
-        (seniorCitizensMonthly[month] || 0) +
-        (familyPlanningsMonthly[month] || 0);
-    });
 
     return NextResponse.json({
       success: true,
@@ -132,12 +76,22 @@ export async function GET() {
         familyPlannings: familyPlanningsCount,
         monthlyResponse,
       },
+      timestamp
+    }, {
+      headers: {
+        'Cache-Control': 'no-store',
+      }
     });
   } catch (error) {
     console.error(error);
     return NextResponse.json(
       { success: false, message: "Failed to retrieve document counts" },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store',
+        }
+      }
     );
   }
 }

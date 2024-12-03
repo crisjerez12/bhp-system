@@ -59,7 +59,11 @@ export default function SeniorCitizenReports() {
     setError(null);
     try {
       const response = await fetch("/api/senior-citizen", {
-        next: { revalidate: 0 },
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        }
       });
       if (!response.ok) {
         throw new Error("Failed to fetch data");

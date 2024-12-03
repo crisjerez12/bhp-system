@@ -62,8 +62,12 @@ export default function FamilyPlanningReports() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/family-planning", {
-        next: { revalidate: 0 },
+      const timestamp = new Date().getTime();
+      const response = await fetch(`/api/family-planning?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-store'
+        }
       });
       if (!response.ok) {
         throw new Error("Failed to fetch data");

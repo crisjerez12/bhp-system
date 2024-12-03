@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Home, Users, Baby, UserPlus, Info } from "lucide-react";
+import { Home, Users, Baby, UserPlus, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface ReportCategory {
@@ -13,6 +13,7 @@ interface ReportCategory {
   icon: React.ElementType;
   description: string;
   analytics: string;
+  count: number;
 }
 
 interface AnalyticsData {
@@ -29,12 +30,18 @@ export default function ReportsPageComponent() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
     null
   );
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
+      setLoading(true);
       try {
-        const response = await fetch("/api/analytics", {
-          next: { revalidate: 60 },
+        const timestamp = new Date().getTime();
+        const response = await fetch(`/api/analytics?t=${timestamp}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-store",
+          },
         });
         const data = await response.json();
         if (data.success) {
@@ -44,6 +51,8 @@ export default function ReportsPageComponent() {
         }
       } catch (error) {
         console.error("Error fetching analytics:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -54,77 +63,97 @@ export default function ReportsPageComponent() {
     {
       title: "Household",
       actionText: "View Household Reports",
-      link: "/reports/household",
+      link: "/dashboard/reports/household",
       color: "bg-blue-600",
       icon: Home,
       description: "Access comprehensive household data and statistics",
       analytics: analyticsData
         ? `${analyticsData.households} households registered`
         : "Loading...",
+      count: analyticsData ? analyticsData.households : 0,
     },
     {
       title: "Family Planning",
       actionText: "Check Family Planning Data",
-      link: "/reports/family-planning",
+      link: "/dashboard/reports/family-planning",
       color: "bg-green-600",
       icon: Users,
       description: "Review family planning trends and effectiveness",
       analytics: analyticsData
         ? `${analyticsData.familyPlannings} families enrolled in planning programs`
         : "Loading...",
+      count: analyticsData ? analyticsData.familyPlannings : 0,
     },
     {
       title: "Pregnant",
       actionText: "Monitor Pregnancy Reports",
-      link: "/reports/pregnant",
+      link: "/dashboard/reports/pregnant",
       color: "bg-pink-600",
       icon: Baby,
       description: "Track pregnancy statistics and maternal health data",
       analytics: analyticsData
         ? `${analyticsData.pregnants} active pregnancies monitored`
         : "Loading...",
+      count: analyticsData ? analyticsData.pregnants : 0,
     },
     {
       title: "Senior Citizen",
       actionText: "Analyze Senior Citizen Data",
-      link: "/reports/senior-citizen",
+      link: "/dashboard/reports/senior-citizen",
       color: "bg-purple-700",
       icon: UserPlus,
       description: "Examine data related to senior citizen welfare and health",
       analytics: analyticsData
         ? `${analyticsData.seniorCitizens} senior citizens registered`
         : "Loading...",
+      count: analyticsData ? analyticsData.seniorCitizens : 0,
     },
   ];
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+    <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Reports Overview</h1>
+          {loading && (
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-primary"></div>
+              <span className="text-sm text-gray-500">Loading...</span>
+            </div>
+          )}
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           {categories.map((category, index) => (
             <motion.div
               key={category.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
             >
-              <Link href={"/dashboard" + category.link} passHref>
-                <motion.div
-                  className={`${category.color} rounded-lg shadow-lg p-6 cursor-pointer transition-transform duration-300 ease-in-out transform hover:scale-105`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
+              <Link href={category.link}>
+                <div className="flex flex-col h-full">
                   <div className="flex items-center justify-between mb-4">
-                    <category.icon className="w-8 h-8 text-white" />
-                    <Info className="w-5 h-5 text-white opacity-70" />
+                    <div className="flex items-center gap-3">
+                      <category.icon />
+                      <h2 className="text-lg font-semibold">
+                        {category.title}
+                      </h2>
+                    </div>
+                    {loading ? (
+                      <div className="h-3 w-12 animate-pulse bg-gray-200 rounded"></div>
+                    ) : (
+                      <span className="text-sm text-gray-600">
+                        {category.count} records
+                      </span>
+                    )}
                   </div>
-                  <h2 className="text-xl font-semibold text-white mb-2">
-                    {category.actionText}
-                  </h2>
-                  <p className="text-sm text-white opacity-90">
-                    {category.analytics}
-                  </p>
-                </motion.div>
+                  <p className="text-gray-600 mb-4">{category.description}</p>
+                  <div className="mt-auto flex items-center text-primary hover:text-primary-dark">
+                    <span className="mr-2">View Details</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
               </Link>
             </motion.div>
           ))}
