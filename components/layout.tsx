@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Menu,
-  X,
   Home,
   Users,
   Heart,
@@ -18,8 +17,8 @@ import { usePathname } from "next/navigation";
 import { getCurrentUser } from "@/app/actions/my-account-actions";
 import { logout } from "@/app/actions/auth";
 import { toast } from "react-toastify";
-import Image from "next/image";
 import { Card } from "@/components/ui/card";
+import Image from "next/image";
 
 type MenuItem = {
   name: string;
@@ -143,7 +142,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="h-full p-4 flex flex-col">
           <Card className="mb-6 bg-blue-800 border-none">
             <div className="flex items-center p-4">
-              <img src="/logo.png" alt="BHP Logo" className="w-14 h-14 mr-2" />
+              <Image
+                src="/logo.png"
+                width={100}
+                height={100}
+                alt="BHP Logo"
+                className="w-14 h-14 mr-2"
+              />
+
               <h1 className="text-md font-bold leading-tight text-white">
                 BARANGAY HEALTH PROFILING
               </h1>

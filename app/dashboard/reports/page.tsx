@@ -37,7 +37,6 @@ export default function ReportsPageComponent() {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
-        const timestamp = new Date().getTime();
         const response = await fetch(`/api/analytics`, {
           cache: "no-store",
           headers: {
