@@ -16,6 +16,7 @@ import {
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { toast } from "react-toastify";
 import { login } from "@/app/actions/auth";
+import Image from "next/image";
 
 export default function LoginPageComponent() {
   const [showTerms, setShowTerms] = useState(false);
@@ -64,16 +65,23 @@ export default function LoginPageComponent() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-sky-400 to-sky-200 p-4 backdrop-blur-sm">
-      <div className="relative mx-auto max-w-md">
+    <div className="min-h-screen w-full bg-gradient-to-br from-sky-400 to-sky-200 p-4 flex items-center justify-center">
+      <div className="w-full max-w-md">
         <div className="absolute -left-4 -top-4 h-8 w-8 rounded-full bg-white/20 blur-sm" />
         <div className="absolute -right-4 bottom-4 h-12 w-12 rounded-full bg-white/20 blur-sm" />
         <div className="absolute right-8 top-8 h-6 w-6 rounded-full bg-white/20 blur-sm" />
 
         <div className="relative mt-12 rounded-xl bg-white/95 p-6 shadow-xl backdrop-blur-sm">
           <div className="space-y-6">
-            <div className="space-y-2 text-center">
-              <h1 className="text-3xl font-bold tracking-tight">
+            <div className="text-center">
+              <Image
+                src="/logo.png"
+                alt="Barangay Health Profiling Logo"
+                width={100}
+                height={100}
+                className="mx-auto mb-4"
+              />
+              <h1 className="text-3xl font-bold tracking-tight text-sky-700">
                 Barangay Health Profiling
               </h1>
               <p className="text-muted-foreground">
@@ -88,7 +96,7 @@ export default function LoginPageComponent() {
                   id="username"
                   name="username"
                   required
-                  className="transition-all hover:border-sky-400 focus:border-sky-400"
+                  className="transition-all duration-200 hover:border-sky-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
                 />
               </div>
 
@@ -100,7 +108,7 @@ export default function LoginPageComponent() {
                     name="password"
                     type={showPassword ? "text" : "password"}
                     required
-                    className="pr-10 transition-all hover:border-sky-400 focus:border-sky-400"
+                    className="pr-10 transition-all duration-200 hover:border-sky-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
                   />
                   <button
                     type="button"
@@ -140,7 +148,7 @@ export default function LoginPageComponent() {
 
               <Button
                 type="submit"
-                className="w-full bg-sky-500 text-lg font-semibold hover:bg-sky-600"
+                className="w-full bg-sky-600 text-white text-lg font-semibold hover:bg-sky-700 transition-colors duration-200"
                 disabled={!agreed || isLoading}
               >
                 {isLoading ? "Signing In..." : "Sign In"}

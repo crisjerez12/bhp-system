@@ -36,9 +36,7 @@ export default function HealthDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("/api/analytics", {
-          next: { revalidate: 0 },
-        });
+        const response = await fetch("/api/analytics");
         if (!response.ok) {
           throw new Error("Failed to fetch the Data");
         }

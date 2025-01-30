@@ -18,6 +18,15 @@ import { usePathname } from "next/navigation";
 import { getCurrentUser } from "@/app/actions/my-account-actions";
 import { logout } from "@/app/actions/auth";
 import { toast } from "react-toastify";
+import Image from "next/image";
+import { Card } from "@/components/ui/card";
+
+type MenuItem = {
+  name: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  path: string;
+  match?: (path: string) => boolean;
+};
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -25,7 +34,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const staffMenuItems = [
+  const staffMenuItems: MenuItem[] = [
     { name: "Household", icon: Users, path: "/dashboard/household" },
     {
       name: "Family Planning",
@@ -41,7 +50,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "My Account", icon: User, path: "/dashboard/my-account" },
   ];
 
-  const adminMenuItems = [
+  const adminMenuItems: MenuItem[] = [
     { name: "Dashboard", icon: Home, path: "/dashboard" },
     { name: "Household", icon: Users, path: "/dashboard/household" },
     {
@@ -55,14 +64,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
       icon: UserPlus,
       path: "/dashboard/senior-citizen",
     },
-    { name: "Reports", icon: FileText, path: "/dashboard/reports" },
+    {
+      name: "Reports",
+      icon: FileText,
+      path: "/dashboard/reports",
+      match: (path: string) => path.startsWith("/dashboard/reports"),
+    },
     { name: "My Account", icon: User, path: "/dashboard/my-account" },
   ];
 
   const menuItems = username === "Staff" ? staffMenuItems : adminMenuItems;
 
   const currentPage =
-    menuItems.find((item) => item.path === pathname)?.name || "My Account";
+    menuItems.find((item) =>
+      item.match ? item.match(pathname) : item.path === pathname
+    )?.name || "My Account";
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -120,36 +136,40 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 bg-slate-900 text-white w-64 min-h-screen p-4 transform transition-transform duration-200 ease-in-out z-30 ${
+        className={`fixed inset-y-0 left-0 bg-slate-900 text-white w-64 min-h-screen transform transition-transform duration-200 ease-in-out z-30 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:relative md:translate-x-0`}
       >
-        <div className="flex justify-between items-center mb-8 border-b-white border-b-2 pb-4">
-          <h1 className="text-2xl font-bold  ">BHP SYSTEM</h1>
-          <button onClick={toggleSidebar} className="md:hidden">
-            <X className="h-7 w-7 border-white border-2" />
-          </button>
+        <div className="h-full p-4 flex flex-col">
+          <Card className="mb-6 bg-blue-800 border-none">
+            <div className="flex items-center p-4">
+              <img src="/logo.png" alt="BHP Logo" className="w-14 h-14 mr-2" />
+              <h1 className="text-md font-bold leading-tight text-white">
+                BARANGAY HEALTH PROFILING
+              </h1>
+            </div>
+          </Card>
+          <nav className="flex-1">
+            {menuItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.path}
+                  className={`flex items-center py-2 px-4 mb-2 rounded transition-colors duration-150 ${
+                    (item.match ? item.match(pathname) : pathname === item.path)
+                      ? "bg-blue-800 hover:bg-blue-900"
+                      : "hover:bg-gray-700"
+                  }`}
+                  onClick={() => setIsSidebarOpen(false)}
+                >
+                  <IconComponent className="mr-3 h-5 w-5" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
-        <nav>
-          {menuItems.map((item) => {
-            const IconComponent = item.icon;
-            return (
-              <Link
-                key={item.name}
-                href={item.path}
-                className={`flex items-center py-2 px-4 mb-2 rounded  transition-colors duration-150 ${
-                  pathname === item.path
-                    ? "bg-red-400 hover:bg-red-400"
-                    : "hover:bg-violet-600"
-                }`}
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                <IconComponent className="mr-3 h-5 w-5" />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
       </aside>
 
       {/* Main content */}
