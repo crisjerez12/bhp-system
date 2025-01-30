@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Home, Users, Baby, UserPlus, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface ReportCategory {
   title: string;
@@ -37,7 +38,7 @@ export default function ReportsPageComponent() {
       setLoading(true);
       try {
         const timestamp = new Date().getTime();
-        const response = await fetch(`/api/analytics?t=${timestamp}`, {
+        const response = await fetch(`/api/analytics`, {
           cache: "no-store",
           headers: {
             "Cache-Control": "no-store",
@@ -64,7 +65,7 @@ export default function ReportsPageComponent() {
       title: "Household",
       actionText: "View Household Reports",
       link: "/dashboard/reports/household",
-      color: "bg-blue-600",
+      color: "bg-blue-200",
       icon: Home,
       description: "Access comprehensive household data and statistics",
       analytics: analyticsData
@@ -76,7 +77,7 @@ export default function ReportsPageComponent() {
       title: "Family Planning",
       actionText: "Check Family Planning Data",
       link: "/dashboard/reports/family-planning",
-      color: "bg-green-600",
+      color: "bg-green-200",
       icon: Users,
       description: "Review family planning trends and effectiveness",
       analytics: analyticsData
@@ -88,7 +89,7 @@ export default function ReportsPageComponent() {
       title: "Pregnant",
       actionText: "Monitor Pregnancy Reports",
       link: "/dashboard/reports/pregnant",
-      color: "bg-pink-600",
+      color: "bg-pink-200",
       icon: Baby,
       description: "Track pregnancy statistics and maternal health data",
       analytics: analyticsData
@@ -100,7 +101,7 @@ export default function ReportsPageComponent() {
       title: "Senior Citizen",
       actionText: "Analyze Senior Citizen Data",
       link: "/dashboard/reports/senior-citizen",
-      color: "bg-purple-700",
+      color: "bg-purple-200",
       icon: UserPlus,
       description: "Examine data related to senior citizen welfare and health",
       analytics: analyticsData
@@ -114,7 +115,6 @@ export default function ReportsPageComponent() {
     <div className="flex flex-col gap-4 p-4">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Reports Overview</h1>
           {loading && (
             <div className="flex items-center gap-2">
               <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-primary"></div>
@@ -129,7 +129,10 @@ export default function ReportsPageComponent() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
-              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              className={cn(
+                "bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow",
+                category.color
+              )}
             >
               <Link href={category.link}>
                 <div className="flex flex-col h-full">
