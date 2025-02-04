@@ -2,9 +2,21 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Home, Users, Baby, UserPlus, ArrowRight } from "lucide-react";
+import {
+  Home,
+  Users,
+  Baby,
+  UserPlus,
+  ArrowRight,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import type React from "react";
+import { SeniorCitizenPDFGenerator } from "@/components/SeniorCitizenPDFGenerator";
+import { PregnantPDFGenerator } from "@/components/PregnantPDFGenerator";
+import { FamilyPlanningPDFGenerator } from "@/components/FamilyPlanningPDFGenerator";
+import { HouseholdPDFGenerator } from "@/components/HouseholdPDFGenerator";
+
 
 interface ReportCategory {
   title: string;
@@ -110,14 +122,41 @@ export default function ReportsPageComponent() {
     },
   ];
 
+  const downloadRecords = [
+    {
+      title: "DOWNLOAD HOUSEHOLD RECORDS",
+      color: "bg-blue-600 hover:bg-blue-700",
+      component:HouseholdPDFGenerator,
+    },
+    {
+      title: "DOWNLOAD SENIOR CITIZEN RECORDS",
+      color: "bg-orange-600 hover:bg-orange-700",
+      component: SeniorCitizenPDFGenerator,
+    },
+    {
+      title: "DOWNLOAD PREGNANT RECORDS",
+      color: "bg-green-600 hover:bg-green-700",
+      component: PregnantPDFGenerator,
+    },
+    {
+      title: "DOWNLOAD FAMILY PLANNING RECORDS",
+      color: "bg-emerald-600 hover:bg-emerald-700",
+      component: FamilyPlanningPDFGenerator,
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           {loading && (
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-primary"></div>
-              <span className="text-sm text-gray-500">Loading...</span>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="h-8 w-8 rounded-full border-4 border-gray-200">
+                  <div className="absolute top-0 left-0 h-8 w-8 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+                </div>
+              </div>
+              <span className="text-sm text-gray-600 font-medium">Loading data...</span>
             </div>
           )}
         </div>
@@ -127,9 +166,9 @@ export default function ReportsPageComponent() {
               key={category.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
+              transition={{ duration: 0.4, delay: index * 0.1, ease: "easeOut" }}
               className={cn(
-                "bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow",
+                "bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all duration-300",
                 category.color
               )}
             >
@@ -137,26 +176,48 @@ export default function ReportsPageComponent() {
                 <div className="flex flex-col h-full">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <category.icon />
+                      <category.icon className="text-gray-700" />
                       <h2 className="text-lg font-semibold">
                         {category.title}
                       </h2>
                     </div>
                     {loading ? (
-                      <div className="h-3 w-12 animate-pulse bg-gray-200 rounded"></div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-16 animate-pulse bg-gray-200 rounded-full"></div>
+                      </div>
                     ) : (
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 font-medium">
                         {category.count} records
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-600 mb-4">{category.description}</p>
-                  <div className="mt-auto flex items-center text-primary hover:text-primary-dark">
+                  {loading ? (
+                    <div className="space-y-2">
+                      <div className="h-4 w-3/4 animate-pulse bg-gray-200 rounded-full"></div>
+                      <div className="h-4 w-1/2 animate-pulse bg-gray-200 rounded-full"></div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 mb-4">{category.description}</p>
+                  )}
+                  <div className="mt-auto flex items-center text-primary hover:text-primary-dark transition-colors duration-200">
                     <span className="mr-2">View Details</span>
                     <ArrowRight className="h-4 w-4" />
                   </div>
                 </div>
               </Link>
+            </motion.div>
+          ))}
+        </div>
+        <h3 className="mt-8 mb-4 font-bold text-xl">DOWNLOAD RECORDS</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {downloadRecords.map((record, index) => (
+            <motion.div
+              key={record.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              <record.component />
             </motion.div>
           ))}
         </div>

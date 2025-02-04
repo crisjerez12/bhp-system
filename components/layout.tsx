@@ -29,7 +29,7 @@ type MenuItem = {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [username, setUsername] = useState("ADMIN");
+  const [username, setUsername] = useState("USER");
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -69,11 +69,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
       path: "/dashboard/reports",
       match: (path: string) => path.startsWith("/dashboard/reports"),
     },
-    { name: "My Account", icon: User, path: "/dashboard/my-account" },
   ];
 
   const menuItems = username === "Staff" ? staffMenuItems : adminMenuItems;
-
+  const customPath = pathname.startsWith("/dashboard/reports/");
+  let link = "";
+  if (customPath) {
+    link = pathname.replace("/dashboard/reports/", "").split("/")[0];
+  }
+  
   const currentPage =
     menuItems.find((item) =>
       item.match ? item.match(pathname) : item.path === pathname
@@ -98,8 +102,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUser();
+      console.log(user);
       if (user) {
-        setUsername(user.role === "staff" ? "Staff" : "Admin");
+        setUsername(user.firstName + " " + user.lastName);
       }
     };
     fetchUser();
@@ -187,12 +192,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <button onClick={toggleSidebar} className="md:hidden mr-4">
                 <Menu className="h-6 w-6" />
               </button>
-              <h2 className="font-semibold sm:text-md md:text-lg lg:text-2xl">
-                {currentPage}
+              <h2 className="font-semibold sm:text-md md:text-lg lg:text-2xl capitalize">
+                {link || currentPage}
               </h2>
             </div>
             <div className="flex items-center">
-              <span className="mr-4">{username.toUpperCase()}</span>
+              <Link href="/dashboard/my-account">
+                <span className="mr-4 bg-blue-50 font-semibold text-black px-4 py-[6px] hover:bg-blue-200 duration-150 rounded-md shadow-md flex items-center gap-1 hover:scale-110   ">
+                  <User className="h-5 w-5" />
+                  {username.toUpperCase()}
+                </span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="bg-[#1e1e2d] text-white px-3 py-1 rounded flex items-center"

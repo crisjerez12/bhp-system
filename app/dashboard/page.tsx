@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -56,7 +57,14 @@ export default function HealthDashboard() {
   }, []);
 
   if (isLoading) {
-    return <div className="text-4xl">Loading...</div>;
+    return (
+      <div className="flex h-[80vh] w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-lg text-muted-foreground">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error || !analyticsData) {
